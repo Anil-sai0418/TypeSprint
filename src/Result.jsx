@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Button } from "./components/ui/button";
 import Nav from "./components/ui/nav";
@@ -15,20 +15,6 @@ export default function Result({
   useEffect(() => {
     if (testResults) {
       setResults(testResults);
-    } else {
-      // Fallback demo values, only used when developing in isolation
-      setResults({
-        netWpm: 45,
-        rawWpm: 52,
-        accuracy: 87,
-        correctChars: 245,
-        incorrectChars: 38,
-        correctWords: 42,
-        incorrectWords: 8,
-        totalWords: 50,
-        totalTimeTaken: 67,
-        timeTarget: 60
-      });
     }
   }, [testResults]);
 
@@ -50,7 +36,10 @@ export default function Result({
     return { level: "Beginner", color: "text-orange-600", bg: "bg-orange-50" };
   };
 
-  // Show loader if results not yet in state
+  // Chart show/hide toggle state
+  const [showChart, setShowChart] = useState(true);
+
+    // Show loader if results not yet in state
   if (!results) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -62,17 +51,7 @@ export default function Result({
     );
   }
 
-  // Chart show/hide toggle state
-  const [showChart, setShowChart] = useState(true);
   const performance = getPerformanceLevel();
-
-  // Prepare chart data
-  const chartData = results.wpmHistory && results.wpmHistory.length > 0 
-    ? results.wpmHistory.map((point, index) => ({
-        time: `${index + 1}s`,
-        wpm: point.wpm || 0
-      }))
-    : [];
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col">
@@ -239,48 +218,85 @@ export default function Result({
         {/* Chart Section (Speed Over Time) */}
         {showChart && (
           <section className="w-full max-w-4xl flex flex-col items-center mb-8">
-            <div className="w-full bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Speed Over Time</h3>
-              {chartData.length > 0 ? (
+            <div className="w-full bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-6 border border-gray-100">
+              <h3 className="text-lg font-medium text-gray-800 mb-6 text-center">Speed Over Time</h3>
+              {results?.wpmHistory?.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <LineChart 
+                    data={results.wpmHistory} 
+                    margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
+                  >
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke="rgba(128,128,128,0.15)" 
+                      vertical={false}
+                    />
                     <XAxis 
-                      dataKey="time" 
-                      stroke="#9ca3af"
-                      tick={{ fill: '#9ca3af' }}
+                      dataKey="time"
+                      type="number"
+                      domain={['dataMin', 'dataMax']}
+                      tickFormatter={(value) => `${value}s`}
+                      stroke="#888"
+                      tick={{ fill: '#888', fontSize: 12 }}
                     />
                     <YAxis 
-                      stroke="#9ca3af"
-                      tick={{ fill: '#9ca3af' }}
+                      domain={[0, 'dataMax + 10']}
+                      allowDecimals={false}
+                      stroke="#888"
+                      tick={{ fill: '#888', fontSize: 12 }}
                     />
                     <Tooltip 
                       contentStyle={{
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px'
+                        backgroundColor: 'rgba(32,32,32,0.95)',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '8px 12px'
                       }}
+                      itemStyle={{ color: '#fff', fontSize: '13px' }}
+                      formatter={(value, name) => [
+                        `${Math.round(value)} wpm`, 
+                        name === 'raw' ? 'Raw WPM' : 'Net WPM'
+                      ]}
+                      labelFormatter={(label) => `${label}s`}
                     />
                     <Line 
-                      type="monotone" 
-                      dataKey="wpm" 
-                      stroke="#6366f1" 
-                      strokeWidth={2}
-                      dot={{ fill: '#6366f1', r: 3 }}
-                      activeDot={{ r: 5, fill: '#4f46e5' }}
+                      type="monotone"
+                      dataKey="raw"
+                      stroke="#999"
+                      strokeWidth={1.8}
+                      dot={false}
+                      isAnimationActive={false}
+                      strokeDasharray="4 4"
+                    />
+                    <Line 
+                      type="monotone"
+                      dataKey="wpm"
+                      stroke="#4f46e5"
+                      strokeWidth={2.5}
+                      dot={false}
+                      isAnimationActive={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <p className="text-center text-gray-500 py-8">No WPM history available.</p>
               )}
-            </div>
+                {/* Legend */}
+                <div className="flex justify-center gap-6 mt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-[2px] bg-[#4f46e5]"></div>
+                    <span className="text-sm text-gray-600">Net WPM</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-[2px] bg-[#999]" style={{ borderTop: '2px dashed #999' }}></div>
+                    <span className="text-sm text-gray-600">Raw WPM</span>
+                  </div>
+                </div>
+              </div>
           </section>
-        )}
-
-        {/* Action Buttons */}
+        )}        {/* Action Buttons */}
         <div className="w-full max-w-4xl bg-white/80 border border-amber-100 shadow-lg rounded-xl flex flex-col items-center gap-6 py-8 px-4 sm:px-8 mb-8">
-          <div className="flex flex-wrap justify-center gap-4 w-full">
+                    <div className="flex flex-wrap justify-center gap-4 w-full">
             <Button
               onClick={onTryAgain}
               className="min-w-[120px] max-w-[180px] h-12 text-base bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow hover:shadow-lg hover:scale-105 transition-all duration-300"
@@ -293,10 +309,10 @@ export default function Result({
             >
               New Test
             </Button>
-            <Button>
+            <Button
               onClick={onSettings}
               className="min-w-[120px] max-w-[180px] h-12 text-base bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-lg shadow hover:shadow-lg hover:scale-105 transition-all duration-300"
-            
+            >
               Settings
             </Button>
             <Button
@@ -305,9 +321,10 @@ export default function Result({
             >
               Leaderboard
             </Button>
-          </div>
+                  </div>
         </div>
       </main>
     </div>
   );
 }
+
