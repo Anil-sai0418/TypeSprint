@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { ModeToggle } from '../mode-toggle'
+import { ThemeToggle } from '../ThemeToggle'
 import { CircleUserIcon, EditIcon, CameraIcon, PhoneIcon, MapPinIcon, MailIcon, UserIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 

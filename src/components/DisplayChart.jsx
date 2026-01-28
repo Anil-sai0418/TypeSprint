@@ -1,7 +1,7 @@
 "use client"
 
 import { TrendingUp } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -21,22 +21,24 @@ import {
 
 export const description = "An area chart with a legend"
 
+// Sample WPM data structure (replace this with actual test results)
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
+  { time: 0, rawWPM: 0, netWPM: 0 },
+  { time: 5, rawWPM: 45, netWPM: 42 },
+  { time: 10, rawWPM: 52, netWPM: 48 },
+  { time: 15, rawWPM: 58, netWPM: 54 },
+  { time: 20, rawWPM: 55, netWPM: 51 },
+  { time: 25, rawWPM: 60, netWPM: 56 },
+  { time: 30, rawWPM: 62, netWPM: 58 },
 ]
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  rawWPM: {
+    label: "Raw WPM",
     color: "var(--chart-1)",
   },
-  mobile: {
-    label: "Mobile",
+  netWPM: {
+    label: "WPM",
     color: "var(--chart-2)",
   },
 }
@@ -44,56 +46,57 @@ const chartConfig = {
 export function ChartAreaLegend() {
   return (
     <Card className={'max-sm:w-full w-[calc(100vw-30rem)]'}>
-      {/* <CardHeader>
-        <CardTitle>Area Chart - Legend</CardTitle>
-        <CardDescription>
-          Showing total visitors for the last 6 months
-        </CardDescription>
-      </CardHeader> */}
-      <CardContent >
+      <CardContent>
         <ChartContainer config={chartConfig}>
           <AreaChart
             accessibilityLayer
             data={chartData}
             height={80}
             margin={{
-              left: 12,
+              left: 25,
               right: 12,
+              top: 5,
+              bottom: 5,
             }}
           >
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis
-              dataKey="month"
+              dataKey="time"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+              tickFormatter={(value) => `${value}s`}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tickMargin={8}
+              domain={[0, 'auto']}
             />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="line" />}
             />
             <Area
-              dataKey="mobile"
-              type="natural"
-              fill="var(--color-mobile)"
-              fillOpacity={0.4}
-              stroke="var(--color-mobile)"
-              stackId="a"
+              dataKey="netWPM"
+              type="monotone"
+              fill="var(--color-desktop)"
+              fillOpacity={0.2}
+              stroke="var(--color-desktop)"
+              strokeWidth={2}
             />
             <Area
-              dataKey="desktop"
-              type="natural"
-              fill="var(--color-desktop)"
-              fillOpacity={0.4}
-              stroke="var(--color-desktop)"
-              stackId="a"
+              dataKey="rawWPM"
+              type="monotone"
+              fill="var(--color-mobile)"
+              fillOpacity={0.2}
+              stroke="var(--color-mobile)"
+              strokeWidth={2}
             />
             <ChartLegend content={<ChartLegendContent />} />
           </AreaChart>
         </ChartContainer>
       </CardContent>
-      
     </Card>
   )
 }
