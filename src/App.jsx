@@ -43,7 +43,7 @@ function App() {
           <Routes>
             <Route path='*' element={<NotFound/>}/>
             <Route path='/' element={<First />} />
-            <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path='/type' element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path='/first' element= {<First/>}/>
             <Route path='/profile' element= {<Profile/>}/>
             <Route path='/Loding' element= {<TypingLoader/>}/>

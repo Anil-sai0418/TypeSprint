@@ -3,6 +3,7 @@ import { RotateCcw, Type, Clock, Hash, AlignLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import Navigation from "@/components/ui/Navagation";
+import Footer from "./Footer";
 import Result from "./Result";
 import { fetchRandomText } from "../services/api";
 
@@ -176,59 +177,63 @@ export default function TypingTest() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono flex flex-col transition-colors duration-500">
+    <div className="min-h-screen bg-background text-foreground font-mono flex flex-col transition-colors duration-500 pt-28">
       <Navigation />
 
       {/* --- Toolbar --- */}
      <div
   className={`
-    sticky top-0 z-10 w-full flex mt-30 justify-center py-8 transition-all duration-500 ease-in-out
+    sticky top-28 z-10 w-full flex justify-center py-8 transition-all duration-500 ease-in-out
     ${status === "running" ? "opacity-20 translate-y-[-10px] pointer-events-none" : "opacity-100 translate-y-0"}
   `}
 >
   <div
     className="
-      flex items-center gap-4 px-6 py-2.5
-      bg-background/60 backdrop-blur-xl 
-      border border-white/10 ring-1 ring-black/5 dark:ring-white/5
-      shadow-[0_8px_30px_rgb(0,0,0,0.12)]
-      rounded-full transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)]
+      flex items-center gap-4 px-20 py-3
+      bg-gradient-to-b from-background/80 to-background/40
+      backdrop-blur-2xl
+      border border-border/40
+      ring-1 ring-black/5 dark:ring-white/10
+      shadow-[0_10px_40px_rgba(0,0,0,0.15)]
+      rounded-lg
+      transition-all duration-300 ease-out
+      hover:shadow-[0_14px_50px_rgba(0,0,0,0.25)]
     "
   >
     {/* Group 1: Toggles */}
-    <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setSettings((s) => ({ ...s, showPunctuation: !s.showPunctuation }))}
-        className={`
-          h-9 w-9 rounded-full transition-all duration-300
-          ${
-            settings.showPunctuation
-              ? "bg-primary text-primary-foreground shadow-md scale-105"
-              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-          }
-        `}
-      >
-        <Hash className="w-4 h-4" strokeWidth={settings.showPunctuation ? 2.5 : 2} />
-      </Button>
+  <div className="flex items-center bg-muted/60 backdrop-blur-md p-1 rounded-2xl shadow-inner border border-border/40">
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setSettings((s) => ({ ...s, showPunctuation: !s.showPunctuation }))}
+      className={`
+        h-9 w-14 rounded-xl transition-all duration-300
+        ${
+          settings.showPunctuation
+            ? "bg-background text-foreground shadow-md scale-105"
+            : "text-muted-foreground hover:text-foreground"
+        }
+      `}
+    >
+      <Hash className="w-4 h-4" strokeWidth={settings.showPunctuation ? 2.5 : 2} />
+    </Button>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setSettings((s) => ({ ...s, showNumbers: !s.showNumbers }))}
-        className={`
-          h-9 w-9 rounded-full transition-all duration-300
-          ${
-            settings.showNumbers
-              ? "bg-primary text-primary-foreground shadow-md scale-105"
-              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-          }
-        `}
-      >
-        <Type className="w-4 h-4" strokeWidth={settings.showNumbers ? 2.5 : 2} />
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setSettings((s) => ({ ...s, showNumbers: !s.showNumbers }))}
+      className={`
+        h-9 w-14 rounded-xl transition-all duration-300
+        ${
+          settings.showNumbers
+            ? "bg-background text-foreground shadow-md scale-105"
+            : "text-muted-foreground hover:text-foreground"
+        }
+      `}
+    >
+      <Type className="w-4 h-4" strokeWidth={settings.showNumbers ? 2.5 : 2} />
+    </Button>
+  </div>
 
     {/* Divider */}
     <div className="w-px h-5 bg-border/40 mx-1" />
@@ -396,6 +401,8 @@ export default function TypingTest() {
         </div>
 
       </main>
+
+      <Footer isLoggedIn={true} />
     </div>
   );
 }

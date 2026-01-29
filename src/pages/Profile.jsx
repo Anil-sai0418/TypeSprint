@@ -13,6 +13,7 @@ import {
   Activity
 } from "lucide-react";
 import Navigation from "../components/ui/Navagation";
+import Footer from "./Footer";
 import { getFullUserProfile, updateProfileData, getUserStats, getUserActivity } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -180,9 +181,9 @@ function Profile() {
   const { user, profile } = userProfile;
 
   return (
-    <div className="min-h-screen bg-background dark:bg-gray-900 text-foreground dark:text-gray-100 px-4 sm:px-6">
+    <div className="min-h-screen bg-background dark:bg-gray-900 text-foreground dark:text-gray-100 px-4 sm:px-6 pt-28">
       <Navigation />
-      <div className="max-w-6xl mt-25 mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
         {/* Left: Profile Card */}
         <div className="lg:col-span-1 rounded-xl border border-border dark:border-gray-700 bg-card dark:bg-gray-800 p-6 space-y-6 h-fit text-center lg:text-left">
@@ -408,6 +409,8 @@ function Profile() {
 
         </div>
       </div>
+
+      <Footer isLoggedIn={true} />
     </div>
   );
 }

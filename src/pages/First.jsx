@@ -83,7 +83,7 @@ const TypeSprintHome = () => {
           {/* CTA Buttons: Refined shadows and hover states */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center justify-center">
             <button
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/type')}
               className="group w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 text-sm font-semibold text-white transition-all bg-indigo-600 rounded-lg hover:bg-indigo-500 hover:shadow-[0_0_20px_-5px_rgba(79,70,229,0.5)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Start Typing

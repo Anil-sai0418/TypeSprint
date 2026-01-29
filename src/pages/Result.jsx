@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from "../components/ui/Navagation";
+import Footer from "./Footer";
 import PerformanceBadge from './result/components/PerformanceBadge';
 import MainStatsCards from './result/components/MainStatsCards';
 import DetailedStats from './result/components/DetailedStats';
@@ -66,7 +67,7 @@ export default function Result({
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 flex flex-col">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 flex flex-col pt-28">
       <Navigation />
       <main className="flex-1 flex flex-col items-center justify-start pt-8 md:pt-12 px-3 sm:px-4 md:px-6 pb-12">
         
@@ -95,6 +96,8 @@ export default function Result({
           onLeaderboard={onLeaderboard}
         />
       </main>
+
+      <Footer isLoggedIn={true} />
     </div>
   );
 }
