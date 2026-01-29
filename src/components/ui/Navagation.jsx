@@ -3,6 +3,7 @@ import { UserCircle, Menu, X, LogOut, User, Palette, Plus } from "lucide-react";
 import { ThemeToggle } from "../ThemeToggle";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import BreadcrumbNav from "../BreadcrumbNav";
 
 export default function Navigation() {
   const [open, setOpen] = useState(false);
@@ -80,8 +81,10 @@ export default function Navigation() {
     }`;
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 border-b border-border/40 bg-transparent backdrop-blur-sm text-foreground">
-      <div className="h-[70px] px-6 flex items-center justify-between">
+    <>
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 left-0 w-full z-50 border-b border-border/40 bg-transparent backdrop-blur-sm text-foreground">
+        <div className="h-[70px] px-6 flex items-center justify-between">
         
         {/* Left: Logo + Links */}
     <div
@@ -101,7 +104,7 @@ export default function Navigation() {
       </span>
       {/* Desktop Links */}
       <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-        <NavLink to="/type" className={linkClass}>
+        <NavLink to="/home" className={linkClass}>
           Type
         </NavLink>
         <NavLink to="/learning" className={linkClass}>
@@ -213,7 +216,7 @@ export default function Navigation() {
       {open && (
         <div className="md:hidden px-6 pb-4 flex flex-col gap-3 text-sm font-medium">
           <NavLink
-            to="/type"
+            to="/home"
             onClick={() => setOpen(false)}
             className={linkClass}
           >
@@ -229,6 +232,9 @@ export default function Navigation() {
           </NavLink>
         </div>
       )}
-    </nav>
+      </nav>
+
+      <BreadcrumbNav />
+    </>
   );
 }

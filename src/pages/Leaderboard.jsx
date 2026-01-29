@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Navigation from "@/components/ui/Navagation";
+import Footer from "./Footer";
 import { getLeaderboard } from "../services/api";
 import { Zap, Trophy, TrendingUp } from "lucide-react";
 
@@ -53,10 +54,10 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-[#0b1220] dark:to-[#0f172a] text-foreground font-sans">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-[#0b1220] dark:to-[#0f172a] text-foreground font-sans pt-28">
       <Navigation />
       
-      <div className="flex-1 flex flex-col items-center mt-20 pt-12 px-4 pb-8">
+      <div className="flex-1 flex flex-col items-center pt-12 px-4 pb-8">
         
         {/* Header Section */}
         <div className="text-center mb-12 space-y-3">
@@ -198,6 +199,8 @@ export default function Leaderboard() {
           )}
         </div>
       </div>
+
+      <Footer isLoggedIn={true} />
     </div>
   );
 }
