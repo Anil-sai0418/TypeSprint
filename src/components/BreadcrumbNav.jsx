@@ -27,17 +27,24 @@ export default function BreadcrumbNav() {
   const breadcrumbs = useBreadcrumbs();
 
   return (
-    <div className="fixed top-[70px] left-0 w-full z-40 bg-background/80 backdrop-blur-sm border-b border-border/40 pt-3 pb-3 px-6">
+    <div className="fixed top-[70px] left-0 w-full z-40 pt-3 pb-3 px-6">
       <Breadcrumb>
-        <BreadcrumbList>
+        <BreadcrumbList className="flex items-center gap-2 text-sm tracking-wide">
           {breadcrumbs.map((item, index) => (
-            <div key={item.href} className="flex items-center gap-1.5">
-              {index > 0 && <BreadcrumbSeparator />}
+            <div key={item.href} className="flex items-center gap-2">
+              {index > 0 && (
+                <BreadcrumbSeparator className="opacity-60 scale-90" />
+              )}
               <BreadcrumbItem>
                 {index === breadcrumbs.length - 1 ? (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-semibold text-foreground">
+                    {item.label}
+                  </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink onClick={() => navigate(item.href)}>
+                  <BreadcrumbLink
+                    onClick={() => navigate(item.href)}
+                    className="font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 relative after:absolute after:left-0 after:-bottom-0.5 after:h-[1.5px] after:w-0 after:bg-foreground hover:after:w-full after:transition-all after:duration-300"
+                  >
                     {item.label}
                   </BreadcrumbLink>
                 )}
