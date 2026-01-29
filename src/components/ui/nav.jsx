@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '../ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { ModeToggle } from '../mode-toggle'
+import { ThemeToggle } from '../ThemeToggle'
 import { CircleUserIcon, EditIcon, CameraIcon, PhoneIcon, MapPinIcon, MailIcon, UserIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -95,27 +95,15 @@ export default function Nav() {
 
     return (
         <>
-        <nav className="h-[60px] w-full bg-white/10 backdrop-blur-md border-b border-white/20 flex items-center relative">
-            <p onClick={() => navigate('/home')} className="text-xl sm:text-2xl md:text-xl text-blue-500 font-bold pl-4 sm:pl-8 cursor-pointer">
+        <nav className="h-[60px]  bg-gray-200 w-full  backdrop-blur-md border-b border-white/20 flex items-center relative z-50">
+            <p onClick={() => navigate('/first')} className="text-xl sm:text-2xl md:text-xl text-blue-500 font-bold pl-4 sm:pl-8 cursor-pointer">
                 TypeSprint
             </p>
 
-            <div className="absolute left-1/2 transform -translate-x-1/2 w-[90%] sm:w-[60%] md:w-[30%] h-[50px] bg-primary/30 rounded-[5px] flex justify-center items-center gap-6">
-                <Button>Language</Button>
-                <Select>
-                    <SelectTrigger className="w-[100px]">
-                        <SelectValue placeholder="Theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="light">pink</SelectItem>
-                        <SelectItem value="dark">red</SelectItem>
-                        <SelectItem value="system">orange</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+          
 
             <div className="ml-auto flex items-center space-x-4 pr-2 sm:pr-4 relative flex-wrap gap-2">
-                <div onClick={() => setMenuOpen(true)} className="cursor-pointer">
+                <div onClick={() => setMenuOpen(true)} className="cursor-pointer z-50">
                     {userProfile.profileImage ? (
                         <img 
                             src={userProfile.profileImage} 
@@ -123,46 +111,54 @@ export default function Nav() {
                             className="w-8 h-8 rounded-full object-cover border-2 border-primary"
                         />
                     ) : (
-                        <CircleUserIcon className="w-8 h-8" />
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center border-2 border-primary">
+                            <UserIcon className="w-5 h-5 text-gray-500" />
+                        </div>
                     )}
                 </div>
 
                 {menuOpen && (
-                    <div ref={dropdownRef} className="absolute top-full right-2 sm:right-4 mt-2 w-[90vw] max-w-[22rem] bg-white/10 backdrop-blur-md border border-white/20 shadow-lg rounded-md z-50">
-                        <div className="p-4">
+                    <div
+                        ref={dropdownRef}
+                        className="absolute top-[60px] right-0 w-[90vw] max-w-[22rem] bg-black/90 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-xl z-[100]"
+                        style={{
+                            boxShadow: '0 4px 32px 0 rgba(30, 58, 138, 0.12), 0 1.5px 6px 0 rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <div className="p-5">
                             {/* Profile Header */}
                             <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-lg font-semibold text-white">Profile</h3>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setIsEditing(!isEditing)}
-                                  className="p-2"
-                                >
-                                  <EditIcon className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setMenuOpen(false);
-                                    setIsEditing(false); // Reset edit mode when closed manually
-                                  }}
-                                  className="p-2"
-                                >
-                                  ✕
-                                </Button>
-                              </div>
+                                <h3 className="text-lg font-semibold text-white">Profile</h3>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setIsEditing(!isEditing)}
+                                        className="p-2"
+                                    >
+                                        <EditIcon className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setMenuOpen(false);
+                                            setIsEditing(false); // Reset edit mode when closed manually
+                                        }}
+                                        className="p-2"
+                                    >
+                                        ✕
+                                    </Button>
+                                </div>
                             </div>
 
                             {/* Profile Image Section */}
-                            <div className="flex flex-col items-center mb-4 relative">
-                                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden relative">
+                            <div className="flex flex-col items-center mb-5 relative">
+                                <div className="w-16 h-16 rounded-full bg-white/20 shadow-inner flex items-center justify-center overflow-hidden relative border-2 border-white/20">
                                     {userProfile.profileImage ? (
-                                        <img 
-                                            src={userProfile.profileImage} 
-                                            alt="Profile" 
+                                        <img
+                                            src={userProfile.profileImage}
+                                            alt="Profile"
                                             className="w-16 h-16 rounded-full object-cover border-2 border-primary"
                                         />
                                     ) : (
@@ -172,7 +168,7 @@ export default function Nav() {
                                     )}
 
                                     {isEditing && (
-                                        <label className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1 cursor-pointer hover:bg-primary/80 z-10">
+                                        <label className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1 cursor-pointer hover:bg-primary/80 z-10 shadow-md">
                                             <CameraIcon className="w-3 h-3" />
                                             <input
                                                 type="file"
@@ -199,7 +195,7 @@ export default function Nav() {
                                             placeholder="Full Name"
                                         />
                                     ) : (
-                                        <div>
+                                        <div className="flex-1 px-3 py-2 rounded-md bg-white/5">
                                             <p className="text-sm sm:text-base font-medium text-white">{userProfile.name}</p>
                                         </div>
                                     )}
@@ -217,7 +213,9 @@ export default function Nav() {
                                             placeholder="Email"
                                         />
                                     ) : (
-                                        <p className="text-xs sm:text-sm text-white">{userProfile.email}</p>
+                                        <div className="flex-1 px-3 py-2 rounded-md bg-white/5">
+                                            <p className="text-xs sm:text-sm text-white">{userProfile.email}</p>
+                                        </div>
                                     )}
                                 </div>
 
@@ -233,13 +231,17 @@ export default function Nav() {
                                             placeholder="Phone Number"
                                         />
                                     ) : (
-                                        <p className="text-xs sm:text-sm text-white">
-                                            {userProfile.phone || (
-                                                <span className="italic text-gray-400">
-                                                    Add phone number
-                                                </span>
-                                            )}
-                                        </p>
+                                        <div className="flex-1 px-3 py-2 rounded-md bg-white/5">
+                                            <p className="text-xs sm:text-sm text-white">
+                                                {userProfile.phone ? (
+                                                    userProfile.phone
+                                                ) : (
+                                                    <span className="italic text-gray-400">
+                                                        Add phone number
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
 
@@ -255,13 +257,17 @@ export default function Nav() {
                                             rows="2"
                                         />
                                     ) : (
-                                        <p className="text-xs sm:text-sm text-white">
-                                            {userProfile.address || (
-                                                <span className="italic text-gray-400">
-                                                    Add address
-                                                </span>
-                                            )}
-                                        </p>
+                                        <div className="flex-1 px-3 py-2 rounded-md bg-white/5">
+                                            <p className="text-xs sm:text-sm text-white">
+                                                {userProfile.address ? (
+                                                    userProfile.address
+                                                ) : (
+                                                    <span className="italic text-gray-400">
+                                                        Add address
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -280,7 +286,7 @@ export default function Nav() {
                             )}
 
                             {/* Divider */}
-                            <div className="border-t border-gray-200 my-4"></div>
+                            <div className="border-t border-white/20 my-4"></div>
 
                             {/* Logout Button */}
                             <Button
