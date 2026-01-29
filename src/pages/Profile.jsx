@@ -23,7 +23,8 @@ function Profile() {
   const [activityMap, setActivityMap] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [editData, setEditData] = useState({ phone: "", address: "" });
+  const [editData, setEditData] = useState({ phone: "", address: "", profileImage: "" });
+  const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchProfileData = useCallback(async () => {
@@ -51,8 +52,12 @@ function Profile() {
         setUserProfile(profileRes);
         setEditData({
           phone: profileRes.profile.phone || "",
-          address: profileRes.profile.address || ""
+          address: profileRes.profile.address || "",
+          profileImage: profileRes.profile.profileImage || ""
         });
+        if (profileRes.profile.profileImage) {
+          setImagePreview(profileRes.profile.profileImage);
+        }
       } else {
         setError(profileRes.message || "Failed to load profile");
       }
@@ -110,6 +115,19 @@ function Profile() {
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
     navigate("/Login");
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        setImagePreview(base64String);
+        setEditData({ ...editData, profileImage: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   if (isLoading) {
@@ -289,6 +307,29 @@ function Profile() {
                 >
                   Close
                 </button>
+              </div>
+
+              {/* Profile Image Upload */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Profile Picture</label>
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-muted dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                    ) : (
+                      <User className="h-8 w-8 text-muted-foreground dark:text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input 
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground dark:text-gray-400 mt-1">JPG, PNG (Max 5MB)</p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

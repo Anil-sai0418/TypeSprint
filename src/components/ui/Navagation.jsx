@@ -7,11 +7,45 @@ import { useNavigate } from "react-router-dom";
 export default function Navigation() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
 
   const navigate = useNavigate();
 
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+
+  // Fetch user details on mount
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const email = localStorage.getItem("userEmail");
+        const token = localStorage.getItem("token");
+        
+        if (email && token) {
+          const response = await fetch(`http://localhost:8000/profile/${email}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setUserDetails({
+                name: data.user.name,
+                email: data.user.email,
+                profileImage: data.profile?.profileImage
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -88,7 +122,15 @@ export default function Navigation() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="p-2 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-green-500 transition"
             >
-              <UserCircle className="h-6 w-6 text-muted-foreground" />
+              {userDetails?.profileImage ? (
+                <img
+                  src={userDetails.profileImage}
+                  alt="Profile"
+                  className="h-6 w-6 rounded-full object-cover"
+                />
+              ) : (
+                <UserCircle className="h-6 w-6 text-muted-foreground" />
+              )}
             </button>
 
             {userMenuOpen && (
@@ -98,9 +140,9 @@ export default function Navigation() {
       animate-in fade-in zoom-in-95 duration-200"
               >
                 <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-medium">Anil Sai Nunna</p>
+                  <p className="text-sm font-medium">{userDetails?.name || "Loading..."}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    anilsainunna@gmail.com
+                    {userDetails?.email || ""}
                   </p>
                 </div>
 
@@ -143,8 +185,9 @@ export default function Navigation() {
                   <button
                     onClick={() => {
                       setUserMenuOpen(false);
-                      console.log("Logout clicked");
-                      navigate("/#logout");
+                      localStorage.removeItem("token");
+                      localStorage.removeItem("userEmail");
+                      navigate("/Login");
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors"
                   >
