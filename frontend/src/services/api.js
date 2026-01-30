@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8000';
+// Use environment variable or deployed backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://typevex-1.onrender.com';
 
 // ==================== TEXT GENERATION ====================
 

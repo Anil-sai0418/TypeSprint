@@ -5,17 +5,35 @@ const cors = require('cors');
 
 const app = express();
 
-// CORS Configuration for deployed frontend
-app.use(cors({
-  origin: [
-    'https://type-sprint-psi.vercel.app',
-    'http://localhost:5173'
-  ],
-  credentials: true
-}));
+// CORS Configuration - Allow requests from frontend
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://type-sprint-psi.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000'
+    ];
+    
+    // Allow requests with no origin (mobile apps, curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // 24 hours
+};
+
+app.use(cors(corsOptions));
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB
 const MONGO_URI = process.env.MONGO_URI;
@@ -32,6 +50,9 @@ mongoose
     console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
   });
+
+// Add explicit OPTIONS handler for preflight requests
+app.options('*', cors(corsOptions));
 
 // Routes
 app.use("/auth", require('./routes/auth'));
