@@ -76,6 +76,7 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Local: http://localhost:${PORT}/`);
+  console.log(`✅ CORS enabled for: https://type-sprint-psi.vercel.app`);
 });
 
 module.exports = app;
