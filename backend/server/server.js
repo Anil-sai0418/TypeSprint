@@ -4,8 +4,21 @@ const cors = require('cors');
 
 const app = express();
 
+// CORS Configuration for deployed frontend
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',      // Local development
+    'http://localhost:5174',      // Local alternative port
+    'https://type-sprint-psi.vercel.app'  // Vercel deployment
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Connect to MongoDB
