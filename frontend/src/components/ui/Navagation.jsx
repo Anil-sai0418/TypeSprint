@@ -21,9 +21,10 @@ export default function Navigation() {
       try {
         const email = localStorage.getItem("userEmail");
         const token = localStorage.getItem("token");
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:10000';
         
         if (email && token) {
-          const response = await fetch(`http://localhost:8000/profile/${email}`, {
+          const response = await fetch(`${API_BASE_URL}/profile/${email}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -46,6 +47,22 @@ export default function Navigation() {
     };
 
     fetchUserDetails();
+
+    // Listen for profile updates from Profile page
+    const handleProfileUpdate = (event) => {
+      const { name, email, profileImage } = event.detail;
+      setUserDetails({
+        name,
+        email,
+        profileImage
+      });
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   useEffect(() => {
