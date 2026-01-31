@@ -46,74 +46,117 @@ export default function WpmChart({ results, showChart, setShowChart }) {
                   <stop offset="95%" stopColor="#9ca3af" stopOpacity={0.05}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
+              <CartesianGrid
+                strokeDasharray="2 6"
                 stroke="#e5e7eb"
-                dark="#374151"
+                vertical={false}
+                opacity={0.6}
               />
-              <XAxis 
+              <XAxis
                 dataKey="time"
                 type="number"
                 domain={['dataMin', 'dataMax']}
                 tickFormatter={(value) => `${value}s`}
+                axisLine={false}
+                tickLine={false}
                 stroke="#9ca3af"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                label={{ value: 'Time (seconds)', position: 'insideBottomRight', offset: -10, fill: '#6b7280' }}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
               />
-              <YAxis 
+              <YAxis
                 domain={[0, 'dataMax + 10']}
                 allowDecimals={false}
+                axisLine={false}
+                tickLine={false}
                 stroke="#9ca3af"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                label={{ value: 'WPM', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                tick={{ fill: '#6b7280', fontSize: 11 }}
               />
-              <Tooltip 
+              {/* Error markers on secondary axis - visual only, don't affect WPM */}
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                type="number"
+                domain={[0, 1]}
+                hide={true}
+              />
+              <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                  border: '2px solid #4f46e5',
-                  borderRadius: '12px',
-                  padding: '12px 16px'
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '10px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                  padding: '10px 14px'
                 }}
-                itemStyle={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}
-                formatter={(value) => [`${Math.round(value)} wpm`, '']}
+                labelStyle={{ color: '#374151', fontWeight: 600 }}
+                itemStyle={{ color: '#111827', fontSize: '13px', fontWeight: 600 }}
+                formatter={(value) => [`${Math.round(value)} WPM`, '']}
                 labelFormatter={(label) => `${label}s`}
-                cursor={{ stroke: '#4f46e5', strokeWidth: 2 }}
+                cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '3 3' }}
+              />
+              {/* Error markers - visual overlay only, not a line */}
+              <Line 
+                type="stepAfter"
+                dataKey="hasError"
+                stroke="none"
+                fill="none"
+                dot={(props) => {
+                  const { cx, payload } = props;
+                  if (payload?.hasError) {
+                    // Show small red dot at top of chart when error occurred
+                    return (
+                      <circle
+                        cx={cx}
+                        cy={28}
+                        r={3}
+                        fill="#ef4444"
+                        opacity={0.7}
+                      />
+                    );
+                  }
+                  return null;
+                }}
+                isAnimationActive={false}
+                name="Error Indicator"
+                yAxisId="right"
               />
               {/* Raw WPM Line (dashed) */}
-              <Line 
+              <Line
                 type="monotone"
                 dataKey="raw"
                 stroke="#9ca3af"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 dot={false}
                 isAnimationActive={false}
-                strokeDasharray="5 5"
+                strokeDasharray="4 6"
                 name="Raw WPM"
-                opacity={0.6}
+                opacity={0.45}
               />
               {/* Net WPM Line (main) */}
-              <Line 
+              <Line
                 type="monotone"
                 dataKey="wpm"
-                stroke="#4f46e5"
+                stroke="#6366f1"
                 strokeWidth={3}
                 dot={false}
                 isAnimationActive={false}
-                name="Net WPM"
+                name="WPM"
                 fill="url(#colorWpm)"
               />
             </LineChart>
           </ResponsiveContainer>
 
           {/* Legend */}
-          <div className="flex justify-center gap-8 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-center gap-8 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-6 h-1 bg-indigo-600 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Net WPM (Adjusted)</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">WPM</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="w-6 h-1 bg-gray-400 rounded-full" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #9ca3af 0px, #9ca3af 5px, transparent 5px, transparent 10px)' }}></div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Raw WPM (Unfiltered)</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Raw WPM</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Errors</span>
             </div>
           </div>
         </div>

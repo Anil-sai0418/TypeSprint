@@ -6,8 +6,13 @@ import Navigation from "@/components/ui/Navagation";
 import Footer from "./Footer";
 import Result from "./Result";
 import { fetchRandomText } from "../services/api";
+import {
+  generateWPMGraphData,
+  trackKeystroke,
+  calculateTestStats as _calculateTestStats
+} from "@/lib/monkeytype-error-handler";
 
-// --- HOOK: Core Logic (Separated for cleanliness) ---
+// --- HOOK: Core Logic (Monkeytype-style WPM tracking) ---
 const useTypingEngine = (settings) => {
   const [status, setStatus] = useState("idle"); // idle, running, completed
   const [words, setWords] = useState([]);
@@ -16,7 +21,9 @@ const useTypingEngine = (settings) => {
   const [endTime, setEndTime] = useState(null);
   const [wpmHistory, setWpmHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  
   const timerRef = useRef(null);
+  const keystrokesRef = useRef([]); // Track every keystroke for Monkeytype-style WPM
 
   // Fetch Text
   const loadTest = useCallback(async () => {
@@ -26,12 +33,11 @@ const useTypingEngine = (settings) => {
     setInput("");
     setStartTime(null);
     setEndTime(null);
+    keystrokesRef.current = [];
 
     try {
       const { wordLimit, showPunctuation, showNumbers } = settings;
       const data = await fetchRandomText(wordLimit, showPunctuation.toString(), showNumbers.toString());
-      // Split by spaces to handle word-wrapping logic easier in UI if needed, 
-      // but for now keeping it as a string is fine, or array of chars.
       setWords(data.text.split("")); 
     } catch (e) {
       console.error(e);
@@ -41,39 +47,37 @@ const useTypingEngine = (settings) => {
     }
   }, [settings]);
 
-  // Timer & WPM Tracker
+  // Timer - Updates every 1 second for display
   useEffect(() => {
-    if (status === "running") {
-      timerRef.current = setInterval(() => {
-        const now = Date.now();
-        const elapsed = (now - startTime) / 1000;
-        
-        // Live WPM Calc
-        const wordsTyped = input.length / 5;
-        const currentWpm = Math.round(wordsTyped / (elapsed / 60));
-        
-        setWpmHistory(prev => [...prev, { time: Math.round(elapsed), wpm: currentWpm }]);
+    if (status !== "running") return;
 
-        // Time Limit Check
-        if (settings.timeLimit && elapsed >= settings.timeLimit) {
-          finishTest();
-        }
-      }, 1000);
-    }
+    const checkTimeLimit = () => {
+      const now = Date.now();
+      const elapsed = (now - startTime) / 1000;
+
+      // Time Limit Check
+      if (settings.timeLimit && elapsed >= settings.timeLimit) {
+        clearInterval(timerRef.current);
+        
+        // Generate Monkeytype-style smooth WPM graph
+        const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
+        setWpmHistory(graphData);
+        
+        setStatus("completed");
+        setEndTime(Date.now());
+      }
+    };
+
+    timerRef.current = setInterval(checkTimeLimit, 1000);
     return () => clearInterval(timerRef.current);
-  }, [status, startTime, settings.timeLimit, input]);
+  }, [status, startTime, settings.timeLimit]);
 
   const startTest = () => {
     if (status === "idle") {
       setStatus("running");
       setStartTime(Date.now());
+      keystrokesRef.current = [];
     }
-  };
-
-  const finishTest = () => {
-    clearInterval(timerRef.current);
-    setStatus("completed");
-    setEndTime(Date.now());
   };
 
   const handleInput = (val) => {
@@ -85,32 +89,82 @@ const useTypingEngine = (settings) => {
     // Boundary check
     if (val.length > words.length) return;
     
+    // Track keystroke changes
+    const prevLength = input.length;
+    const currentLength = val.length;
+
+    if (currentLength > prevLength) {
+      // Characters added (new keystrokes)
+      for (let i = prevLength; i < currentLength; i++) {
+        const typedChar = val[i];
+        const expectedChar = words[i];
+        const isBackspace = false;
+        
+        keystrokesRef.current.push(
+          trackKeystroke(Date.now(), expectedChar, typedChar, isBackspace)
+        );
+      }
+    } else if (currentLength < prevLength) {
+      // Characters removed (backspaces)
+      const backspaceCount = prevLength - currentLength;
+      for (let i = 0; i < backspaceCount; i++) {
+        keystrokesRef.current.push(
+          trackKeystroke(Date.now(), '', '', true) // backspace marker
+        );
+      }
+    }
+    
     setInput(val);
 
     // Completion check
     if (val.length === words.length) {
-      finishTest();
+      // Generate Monkeytype-style smooth WPM graph with error markers
+      const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
+      setWpmHistory(graphData);
+      
+      setStatus("completed");
+      setEndTime(Date.now());
     }
   };
 
-  // Derived Stats
+  // Derived Stats (Monkeytype-accurate)
   const stats = useMemo(() => {
-    const timeElapsed = endTime ? (endTime - startTime) / 1000 : (Date.now() - startTime) / 1000;
-    const correctChars = input.split('').filter((c, i) => c === words[i]).length;
-    const accuracy = input.length > 0 ? Math.round((correctChars / input.length) * 100) : 100;
-    const rawWpm = timeElapsed > 0 ? Math.round((input.length / 5) / (timeElapsed / 60)) : 0;
+    if (keystrokesRef.current.length === 0) {
+      return {
+        netWpm: 0,
+        rawWpm: 0,
+        accuracy: 100,
+        correctChars: 0,
+        incorrectChars: 0,
+        errors: 0,
+        timeElapsed: 0,
+        timeLeft: settings.timeLimit ? settings.timeLimit : null
+      };
+    }
+
+    const currentTime = status === "completed" ? endTime : Date.now();
+    const timeElapsed = (currentTime - startTime) / 1000;
+
+    // Calculate accurate stats from keystroke data
+    const totalTyped = keystrokesRef.current.filter(k => !k.isBackspace).length;
+    const correctCount = keystrokesRef.current.filter(k => k.isCorrect && !k.isBackspace).length;
+    const errorCount = keystrokesRef.current.filter(k => k.isError).length;
+
+    const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 100;
+    const rawWpm = timeElapsed > 0 ? Math.round(((totalTyped / 5) / (timeElapsed / 60))) : 0;
     const netWpm = Math.round(rawWpm * (accuracy / 100));
 
     return {
       netWpm,
       rawWpm,
       accuracy,
-      correctChars,
-      incorrectChars: input.length - correctChars,
+      correctChars: correctCount,
+      incorrectChars: totalTyped - correctCount,
+      errors: errorCount,
       timeElapsed: Math.round(timeElapsed),
       timeLeft: settings.timeLimit ? Math.max(0, Math.round(settings.timeLimit - timeElapsed)) : null
     };
-  }, [input, words, startTime, endTime, settings.timeLimit]);
+  }, [keystrokesRef, startTime, endTime, status, settings.timeLimit]);
 
   return {
     status,
