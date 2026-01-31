@@ -171,3 +171,50 @@ export const getLeaderboard = async (limit = 10) => {
     throw error;
   }
 };
+
+// ==================== LIKE ENDPOINTS ====================
+
+export const getLikeStatus = async (email, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/like/status?email=${email}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch like status');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching like status:', error);
+    throw error;
+  }
+};
+
+export const toggleLike = async (email, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/like/toggle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ email })
+    });
+    if (!response.ok) throw new Error('Failed to toggle like');
+    return await response.json();
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    throw error;
+  }
+};
+
+export const getLikeCount = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/like/count`);
+    if (!response.ok) throw new Error('Failed to fetch like count');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching like count:', error);
+    throw error;
+  }
+};
+

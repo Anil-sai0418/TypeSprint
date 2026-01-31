@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap, Trophy, ChevronRight, Activity, Terminal, Star } from 'lucide-react';
@@ -7,6 +7,13 @@ import Footer from './Footer';
 
 const TypeSprintHome = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const email = localStorage.getItem("userEmail");
+    setIsLoggedIn(!!(token && email));
+  }, []);
 
   // Smoother, more subtle animation variants
   const containerVariants = {
@@ -158,7 +165,7 @@ const TypeSprintHome = () => {
           ))}
         </div>
       </section>
-      <Footer/>
+      <Footer isLoggedIn={isLoggedIn} />
     </div>
   );
 };
