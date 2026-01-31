@@ -97,7 +97,7 @@ const TypeSprintHome = () => {
               <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
             </button>
             <button
-              onClick={() => navigate('/leader')}
+              onClick={() => navigate('/leaderboard')}
               className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-slate-50 dark:hover:bg-white/10 dark:hover:border-white/20 dark:hover:text-white"
             >
               Leaderboard

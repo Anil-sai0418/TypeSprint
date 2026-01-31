@@ -9,6 +9,7 @@ export default function Navigation() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const navigate = useNavigate();
 
@@ -24,6 +25,7 @@ export default function Navigation() {
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:10000';
         
         if (email && token) {
+          setIsLoggedIn(true);
           const response = await fetch(`${API_BASE_URL}/profile/${email}`, {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -40,9 +42,12 @@ export default function Navigation() {
               });
             }
           }
+        } else {
+          setIsLoggedIn(false);
         }
       } catch (error) {
         console.error("Error fetching user details:", error);
+        setIsLoggedIn(false);
       }
     };
 
@@ -134,90 +139,101 @@ export default function Navigation() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
 
-          <div className="relative">
+          {!isLoggedIn ? (
             <button
-              ref={buttonRef}
-              aria-haspopup="menu"
-              aria-expanded={userMenuOpen}
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="p-2 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+              onClick={() => navigate("/Login")}
+              className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition-colors"
             >
-              {userDetails?.profileImage ? (
-                <img
-                  src={userDetails.profileImage}
-                  alt="Profile"
-                  className="h-6 w-6 rounded-full object-cover"
-                />
-              ) : (
-                <UserCircle className="h-6 w-6 text-muted-foreground" />
-              )}
+              Login
             </button>
-
-            {userMenuOpen && (
-              <div
-                ref={menuRef}
-                className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl border border-border bg-background shadow-xl overflow-hidden
-      animate-in fade-in zoom-in-95 duration-200"
+          ) : (
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="p-2 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-green-500 transition"
               >
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-medium">{userDetails?.name || "Loading..."}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {userDetails?.email || ""}
-                  </p>
+                {userDetails?.profileImage ? (
+                  <img
+                    src={userDetails.profileImage}
+                    alt="Profile"
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <UserCircle className="h-6 w-6 text-muted-foreground" />
+                )}
+              </button>
+
+              {userMenuOpen && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl border border-border bg-background shadow-xl overflow-hidden
+        animate-in fade-in zoom-in-95 duration-200"
+                >
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-sm font-medium">{userDetails?.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {userDetails?.email || ""}
+                    </p>
+                  </div>
+
+                  <div className="py-2 text-sm">
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate("/profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      User Details
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate("/room");
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create Room
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate("/themes");
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
+                    >
+                      <Palette className="h-4 w-4" />
+                      Themes
+                    </button>
+                  </div>
+
+                  <div className="border-t border-border">
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("userEmail");
+                        setIsLoggedIn(false);
+                        setUserDetails(null);
+                        navigate("/Login");
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </div>
                 </div>
-
-                <div className="py-2 text-sm">
-                  <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      navigate("/profile");
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
-                  >
-                    <User className="h-4 w-4" />
-                    User Details
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      navigate("/room");
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create Room
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      navigate("/themes");
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
-                  >
-                    <Palette className="h-4 w-4" />
-                    Themes
-                  </button>
-                </div>
-
-                <div className="border-t border-border">
-                  <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      localStorage.removeItem("token");
-                      localStorage.removeItem("userEmail");
-                      navigate("/Login");
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log out
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Mobile Menu Button */}
           <button
