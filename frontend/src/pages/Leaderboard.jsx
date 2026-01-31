@@ -2,13 +2,27 @@ import { useState, useEffect } from "react";
 import Navigation from "@/components/ui/Navagation";
 import Footer from "./Footer";
 import { getLeaderboard } from "../services/api";
-import { Zap, Trophy, TrendingUp, Flame, Target, Calendar } from "lucide-react";
+import { Zap, TrendingUp, Flame, Target, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 
 export default function Leaderboard() {
-  const [leaders, setLeaders] = useState([]);
+  const [allLeaders, setAllLeaders] = useState([]);
+  const [filteredLeaders, setFilteredLeaders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -17,13 +31,19 @@ export default function Leaderboard() {
     fetchLeaderboard();
   }, []);
 
+  useEffect(() => {
+    filterAndPaginateLeaders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allLeaders, searchQuery, currentPage]);
+
   const fetchLeaderboard = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await getLeaderboard(50);
+      const response = await getLeaderboard(100);
       if (response.success) {
-        setLeaders(response.leaderboard);
+        setAllLeaders(response.leaderboard);
+        setCurrentPage(1);
       } else {
         setError(response.message || "Failed to load leaderboard");
       }
@@ -35,6 +55,30 @@ export default function Leaderboard() {
     }
   };
 
+  const filterAndPaginateLeaders = () => {
+    let filtered = allLeaders;
+
+    // Filter by name
+    if (searchQuery.trim()) {
+      filtered = allLeaders.filter((leader) =>
+        leader.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredLeaders(filtered);
+    setCurrentPage(1);
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(filteredLeaders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentLeaders = filteredLeaders.slice(startIndex, endIndex);
+
   const getMedalIcon = (rank) => {
     if (rank === 1) return "🥇";
     if (rank === 2) return "🥈";
@@ -42,202 +86,244 @@ export default function Leaderboard() {
     return null;
   };
 
-  const getRankBgColor = (rank) => {
-    switch (rank) {
-      case 1:
-        return "bg-gradient-to-br from-yellow-300 to-yellow-500";
-      case 2:
-        return "bg-gradient-to-br from-gray-300 to-gray-500";
-      case 3:
-        return "bg-gradient-to-br from-orange-300 to-orange-500";
-      default:
-        return "bg-gradient-to-br from-blue-400 to-indigo-600";
-    }
+  const getRankColor = (rank) => {
+    if (rank === 1) return "text-yellow-600 dark:text-yellow-400 font-bold";
+    if (rank === 2) return "text-gray-600 dark:text-gray-400 font-bold";
+    if (rank === 3) return "text-orange-600 dark:text-orange-400 font-bold";
+    return "text-muted-foreground";
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-foreground font-sans pt-24">
+    <div className="min-h-screen flex flex-col bg-background text-foreground pt-24">
       <Navigation />
 
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
         
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center mb-4">
-            <div className="text-5xl">🏆</div>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="mb-4">
+            <h1 className="text-4xl font-bold mb-2">🏆 Leaderboard</h1>
+            <p className="text-muted-foreground">
+              Top typists ranked by peak speed. {filteredLeaders.length} players
+            </p>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-3">
-            <span className="bg-gradient-to-r from-yellow-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Leaderboard
-            </span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Top typists ranked by peak speed. Can you make it to the top 10?
-          </p>
+
+          {/* Search Filter */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by player name..."
+              value={searchQuery}
+              onChange={handleSearch}
+              className="pl-10 py-2 h-10"
+            />
+          </div>
         </div>
 
         {/* Loading State */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 mb-4"></div>
-            <p className="text-muted-foreground text-lg">Loading leaderboard...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mb-4"></div>
+            <p className="text-muted-foreground">Loading leaderboard...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && !isLoading && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-8 text-center">
-            <p className="text-red-600 dark:text-red-400 text-lg mb-4">{error}</p>
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-6 text-center">
+            <p className="text-destructive mb-4">{error}</p>
             <button
               onClick={fetchLeaderboard}
-              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition"
+              className="px-6 py-2 bg-destructive hover:bg-destructive/90 text-white rounded-lg font-medium transition"
             >
               Retry
             </button>
           </div>
         )}
 
-        {/* Leaderboard Grid */}
-        {!isLoading && !error && leaders.length > 0 && (
-          <div className="space-y-4">
-            {leaders.map((player, index) => (
-              <div
-                key={player.rank}
-                className={`group relative overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
-                  player.rank <= 3
-                    ? "border-transparent bg-gradient-to-r"
-                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-                } ${
-                  player.rank === 1
-                    ? "from-yellow-300/30 to-yellow-500/30"
-                    : player.rank === 2
-                    ? "from-gray-300/30 to-gray-500/30"
-                    : player.rank === 3
-                    ? "from-orange-300/30 to-orange-500/30"
-                    : ""
-                }`}
-              >
-                {/* Animated background for top 3 */}
-                {player.rank <= 3 && (
-                  <div className={`absolute inset-0 opacity-10 ${getRankBgColor(player.rank)}`} />
-                )}
-
-                <div className="relative p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6 justify-between">
-                  
-                  {/* Rank & Player Info */}
-                  <div className="flex items-center gap-4 sm:gap-6 flex-1 w-full sm:w-auto">
-                    
-                    {/* Rank Badge */}
-                    <div className="flex-shrink-0">
-                      <div className={`w-16 h-16 rounded-2xl ${getRankBgColor(player.rank)} flex items-center justify-center text-2xl font-bold text-white shadow-lg`}>
-                        {getMedalIcon(player.rank) || player.rank}
+        {/* Table */}
+        {!isLoading && !error && filteredLeaders.length > 0 && (
+          <>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="border-b hover:bg-muted/50">
+                    <TableHead className="w-16 text-center font-bold">Rank</TableHead>
+                    <TableHead className="font-bold">Player</TableHead>
+                    <TableHead className="text-right font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <Zap className="h-4 w-4" />
+                        Peak WPM
                       </div>
-                    </div>
-
-                    {/* Player Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        {player.profileImage ? (
-                          <img
-                            src={player.profileImage}
-                            alt={player.name}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-md"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center text-white font-bold text-lg border-2 border-white dark:border-slate-700">
-                            {player.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">
-                            {player.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {player.email}
-                          </p>
+                    </TableHead>
+                    <TableHead className="text-right font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <TrendingUp className="h-4 w-4" />
+                        Avg WPM
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <Flame className="h-4 w-4" />
+                        Streak
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right font-bold">
+                      <div className="flex items-center justify-end gap-1">
+                        <Target className="h-4 w-4" />
+                        Tests
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentLeaders.map((player) => (
+                    <TableRow key={player.rank} className="hover:bg-muted/50 transition-colors">
+                      {/* Rank */}
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                          {getMedalIcon(player.rank) ? (
+                            <span className="text-2xl">{getMedalIcon(player.rank)}</span>
+                          ) : (
+                            <span className={`text-lg font-bold ${getRankColor(player.rank)}`}>
+                              #{player.rank}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    </div>
+                      </TableCell>
+
+                      {/* Player Info */}
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {player.profileImage ? (
+                            <img
+                              src={player.profileImage}
+                              alt={player.name}
+                              className="w-10 h-10 rounded-full object-cover border border-border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                              {player.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold text-foreground">{player.name}</p>
+                            <p className="text-xs text-muted-foreground">{player.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Peak WPM */}
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                          <span className="font-bold text-green-700 dark:text-green-400">
+                            {player.peakWpm}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Average WPM */}
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                          <span className="font-bold text-purple-700 dark:text-purple-400">
+                            {player.avgWpm}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Streak */}
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                          <span className="font-bold text-orange-700 dark:text-orange-400">
+                            {player.streak}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Tests */}
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                          <span className="font-bold text-blue-700 dark:text-blue-400">
+                            {player.totalTests}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 px-4 py-4 bg-muted/30 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredLeaders.length)} of{" "}
+                  {filteredLeaders.length} players
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`inline-flex items-center justify-center h-8 w-8 rounded-md text-sm font-medium transition ${
+                          currentPage === page
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-input hover:bg-muted"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto">
-                    
-                    {/* Peak WPM */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-3 sm:p-4 text-center border border-green-200 dark:border-green-700">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Zap className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        <span className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">
-                          Peak
-                        </span>
-                      </div>
-                      <p className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">
-                        {player.peakWpm}
-                      </p>
-                      <p className="text-xs text-green-600 dark:text-green-400">WPM</p>
-                    </div>
-
-                    {/* Average WPM */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-3 sm:p-4 text-center border border-purple-200 dark:border-purple-700">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-                          Avg
-                        </span>
-                      </div>
-                      <p className="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-300">
-                        {player.avgWpm}
-                      </p>
-                      <p className="text-xs text-purple-600 dark:text-purple-400">WPM</p>
-                    </div>
-
-                    {/* Streak */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-xl p-3 sm:p-4 text-center border border-orange-200 dark:border-orange-700">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Flame className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                        <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
-                          Streak
-                        </span>
-                      </div>
-                      <p className="text-xl sm:text-2xl font-bold text-orange-700 dark:text-orange-300">
-                        {player.streak}
-                      </p>
-                      <p className="text-xs text-orange-600 dark:text-orange-400">days</p>
-                    </div>
-
-                    {/* Tests */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-3 sm:p-4 text-center border border-blue-200 dark:border-blue-700">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                          Tests
-                        </span>
-                      </div>
-                      <p className="text-xl sm:text-2xl font-bold text-blue-700 dark:text-blue-300">
-                        {player.totalTests}
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">done</p>
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && leaders.length === 0 && (
+        {!isLoading && !error && filteredLeaders.length === 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">📊</div>
-            <p className="text-xl text-muted-foreground mb-2">No leaderboard data yet.</p>
-            <p className="text-muted-foreground">
-              Complete your first typing test to appear on the leaderboard!
+            <p className="text-xl text-muted-foreground mb-2">
+              {searchQuery ? "No players found matching your search" : "No leaderboard data yet"}
             </p>
+            <p className="text-muted-foreground mb-6">
+              {searchQuery
+                ? "Try searching for a different player name"
+                : "Complete your first typing test to appear on the leaderboard!"}
+            </p>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Footer */}
       <Footer isLoggedIn={isLoggedIn} />
     </div>
   );
