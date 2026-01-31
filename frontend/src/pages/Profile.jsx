@@ -10,11 +10,14 @@ import {
   Zap,
   Trophy,
   Clock,
-  Activity
+  Activity,
+  X
 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import Navigation from "../components/ui/Navagation";
 import Footer from "./Footer";
 import { getFullUserProfile, updateProfileData, getUserStats, getUserActivity } from "../services/api";
+import { compressImage } from "../utils/imageCompression";
 import { useNavigate } from "react-router-dom";
 
 function Profile() {
@@ -97,18 +100,43 @@ function Profile() {
       const token = localStorage.getItem("token");
       const email = localStorage.getItem("userEmail");
 
+      console.log("Saving profile with data:", editData);
       const res = await updateProfileData(email, editData, token);
+      console.log("Update response:", res);
+      
       if (res.success) {
+        // Update local state with new profile data
         setUserProfile(prev => ({
           ...prev,
-          profile: res.profile
+          profile: {
+            ...prev.profile,
+            ...res.profile
+          }
         }));
+        
+        // Update image preview to show the saved image
+        if (res.profile?.profileImage) {
+          setImagePreview(res.profile.profileImage);
+        }
+        
+        // Refresh the data from server to ensure everything is synced
+        await fetchProfileData();
+        
+        // Dispatch event to notify Navigation component of update
+        window.dispatchEvent(new CustomEvent('profileUpdated', {
+          detail: {
+            name: userProfile?.user?.name,
+            email: userProfile?.user?.email,
+            profileImage: res.profile?.profileImage
+          }
+        }));
+        
         setIsEditing(false);
         alert("Profile updated successfully!");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Failed to update profile");
+      alert("Failed to update profile: " + error.message);
     }
   };
 
@@ -118,14 +146,35 @@ function Profile() {
     navigate("/Login");
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (max 5MB for original)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size must be less than 5MB");
+        return;
+      }
+
+      // Check file type
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        alert("Only JPG, PNG, or WebP images are supported");
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setImagePreview(base64String);
-        setEditData({ ...editData, profileImage: base64String });
+      reader.onload = async () => {
+        try {
+          // Compress image before setting
+          const compressedBase64 = await compressImage(reader.result, 0.7, 400, 400);
+          setImagePreview(compressedBase64);
+          setEditData({ ...editData, profileImage: compressedBase64 });
+        } catch (error) {
+          console.error("Error compressing image:", error);
+          alert("Error processing image. Please try another.");
+        }
+      };
+      reader.onerror = () => {
+        alert("Error reading file");
       };
       reader.readAsDataURL(file);
     }
@@ -297,82 +346,98 @@ function Profile() {
             )}
           </div>
 
-          {/* Edit Profile Card */}
+          {/* Edit Profile Card - Using Shadcn Card */}
           {isEditing && (
-            <div className="rounded-xl border border-border dark:border-gray-700 bg-card dark:bg-gray-800 p-6 space-y-5 animate-in fade-in slide-in-from-bottom-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Edit Profile</h2>
+            <Card className="bg-card dark:bg-gray-800 border border-border dark:border-gray-700 shadow-lg animate-in fade-in slide-in-from-bottom-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border dark:border-gray-700">
+                <div>
+                  <CardTitle className="text-xl font-semibold">Edit Profile</CardTitle>
+                  <CardDescription>Update your profile information and picture</CardDescription>
+                </div>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition"
+                  className="text-muted-foreground hover:text-foreground transition p-1 rounded-md hover:bg-muted dark:hover:bg-gray-700"
                 >
-                  Close
+                  <X size={20} />
                 </button>
-              </div>
-
-              {/* Profile Image Upload */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">Profile Picture</label>
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-muted dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                    {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
-                    ) : (
-                      <User className="h-8 w-8 text-muted-foreground dark:text-gray-400" />
-                    )}
+              </CardHeader>
+              
+              <CardContent className="space-y-6 pt-6">
+                {/* Profile Image Upload */}
+                <div className="space-y-4">
+                  <label className="block text-sm font-semibold">Profile Picture</label>
+                  <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 dark:bg-gray-700/30 border border-border dark:border-gray-700">
+                    <div className="h-24 w-24 rounded-full bg-muted dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0 border-2 border-border dark:border-gray-600">
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-12 w-12 text-muted-foreground dark:text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Choose Image</label>
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm cursor-pointer hover:border-blue-500/50 transition"
+                      />
+                      <p className="text-xs text-muted-foreground dark:text-gray-400 mt-2 flex items-center gap-1">
+                        <span>✓</span> JPG, PNG supported (Max 5MB)
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <input 
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground dark:text-gray-400 mt-1">JPG, PNG (Max 5MB)</p>
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-4 pt-4 border-t border-border dark:border-gray-700">
+                  <label className="block text-sm font-semibold">Contact Information</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Phone Number</label>
+                      <input 
+                        type="tel"
+                        value={editData.phone}
+                        onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                        className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 text-foreground dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm placeholder:text-muted-foreground/60 transition hover:border-blue-500/50"
+                        placeholder="+1 (555) 000-0000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Address</label>
+                      <input 
+                        type="text"
+                        value={editData.address}
+                        onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+                        className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 text-foreground dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm placeholder:text-muted-foreground/60 transition hover:border-blue-500/50"
+                        placeholder="City, Country"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Phone</label>
-                  <input 
-                    type="tel"
-                    value={editData.phone}
-                    onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                    placeholder="Enter phone number"
-                  />
+                {/* Action Buttons */}
+                <div className="flex gap-3 border-t border-border dark:border-gray-700 pt-6">
+                  <button
+                    onClick={handleSaveProfile}
+                    className="flex-1 px-4 py-2.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold transition transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setImagePreview(null);
+                      setEditData({ phone: "", address: "", profileImage: "" });
+                    }}
+                    className="flex-1 px-4 py-2.5 rounded-md border-2 border-border dark:border-gray-700 hover:bg-muted dark:hover:bg-gray-700/50 text-foreground dark:text-gray-100 font-semibold transition"
+                  >
+                    Cancel
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Address</label>
-                  <input 
-                    type="text"
-                    value={editData.address}
-                    onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-border dark:border-gray-700 bg-background dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                    placeholder="Enter address"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-border dark:border-gray-700">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 rounded-md border border-border dark:border-gray-700 hover:bg-muted dark:hover:bg-gray-700 transition"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleSaveProfile}
-                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Activity Heatmap */}

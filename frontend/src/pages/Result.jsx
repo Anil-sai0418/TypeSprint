@@ -39,10 +39,10 @@ export default function Result({
 
       const payload = {
         email,
-        wpm: testData.netWpm,
-        rawWpm: testData.rawWpm,
-        accuracy: testData.accuracy,
-        duration: testData.totalTimeTaken,
+        wpm: testData.netWpm || 0,
+        accuracy: testData.accuracy || 0,
+        duration: testData.totalTimeTaken || 0,
+        raw: testData.rawWpm || 0,
       };
 
       const response = await saveTestResult(payload, token);

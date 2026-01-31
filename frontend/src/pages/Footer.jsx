@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getLikeStatus, toggleLike, getLikeCount } from '../services/api';
 
 function Footer({ isLoggedIn = false }) {
   const [connectionStatus, setConnectionStatus] = useState("offline");
@@ -7,8 +8,40 @@ function Footer({ isLoggedIn = false }) {
     downlink: null,
   });
   const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(128);
+  const [likes, setLikes] = useState(0);
+  const [loading, setLoading] = useState(false);
 
+  // Fetch like status and count
+  useEffect(() => {
+    const fetchLikeData = async () => {
+      try {
+        // Get total likes count
+        const countRes = await getLikeCount();
+        if (countRes.success) {
+          setLikes(countRes.totalLikes);
+        }
+
+        // Get user like status if logged in
+        if (isLoggedIn) {
+          const email = localStorage.getItem("userEmail");
+          const token = localStorage.getItem("token");
+          
+          if (email && token) {
+            const statusRes = await getLikeStatus(email, token);
+            if (statusRes.success) {
+              setLiked(statusRes.userLiked);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching like data:", error);
+      }
+    };
+
+    fetchLikeData();
+  }, [isLoggedIn]);
+
+  // Connection status tracking
   useEffect(() => {
     const updateConnectionStatus = () => {
       if (!navigator.onLine) {
@@ -61,6 +94,31 @@ function Footer({ isLoggedIn = false }) {
     };
   }, []);
 
+  // Handle like toggle
+  const handleLikeClick = async () => {
+    if (!isLoggedIn) {
+      alert("Please login to like this application");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const email = localStorage.getItem("userEmail");
+      const token = localStorage.getItem("token");
+
+      const res = await toggleLike(email, token);
+      if (res.success) {
+        setLiked(res.userLiked);
+        setLikes(res.totalLikes);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      alert("Error updating like status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="relative bg-white text-zinc-900 dark:bg-black dark:text-white overflow-hidden font-sans">
       {/* Background "Osmo" Logo Layer */}
@@ -84,7 +142,7 @@ function Footer({ isLoggedIn = false }) {
             {/* Icon + Text */}
             <div className="flex items-start gap-4">
               {/* Icon placeholder */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-md bg-zinc-900 flex items-center justify-center text-zinc-500 dark:text-zinc-400">
+              <div className="shrink-0 w-10 h-10 rounded-md bg-zinc-900 flex items-center justify-center text-zinc-500 dark:text-zinc-400">
                 ⌨️
               </div>
 
@@ -112,12 +170,12 @@ function Footer({ isLoggedIn = false }) {
               {!isLoggedIn && (
                 <>
                   <li>
-                    <a href="#" className="hover:text-zinc-400 transition-colors">
+                    <a href="/Login" className="hover:text-zinc-400 transition-colors">
                       Log In
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-zinc-400 transition-colors">
+                    <a href="/Register" className="hover:text-zinc-400 transition-colors">
                       Sign Up
                     </a>
                   </li>
@@ -155,13 +213,13 @@ function Footer({ isLoggedIn = false }) {
 
   <div
     className="relative overflow-hidden w-full max-w-xs rounded-xl
-    bg-gradient-to-b from-zinc-100 to-white dark:from-zinc-900 dark:to-black
+    bg-linear-to-b from-zinc-100 to-white dark:from-zinc-900 dark:to-black
     border border-zinc-200 dark:border-zinc-800
     p-5 space-y-5 shadow-lg
     transition-all duration-300
     hover:shadow-xl hover:-translate-y-0.5
     after:absolute after:inset-0 after:content-['']
-    after:bg-gradient-to-r after:from-transparent after:via-white/40 after:to-transparent
+    after:bg-linear-to-r after:from-transparent after:via-white/40 after:to-transparent
     dark:after:via-white/10
     after:translate-x-[-120%] hover:after:translate-x-[120%]
     after:transition-transform after:duration-700"
@@ -213,25 +271,25 @@ function Footer({ isLoggedIn = false }) {
     {/* Like Section */}
     <div className="space-y-3">
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Found this helpful?
+        {isLoggedIn ? "Like this app?" : "Login to like"}
       </p>
 
       <button
-        onClick={() => {
-          if (!liked) {
-            setLiked(true);
-            setLikes(likes + 1);
-          }
-        }}
+        onClick={handleLikeClick}
+        disabled={loading}
         className={`w-full text-xs font-semibold py-2.5 rounded-lg transition-all
           flex items-center justify-center gap-2
           ${
             liked
               ? "bg-emerald-500/10 text-emerald-400 cursor-default"
-              : "bg-zinc-200 hover:bg-zinc-300 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white"
-          }`}
+              : isLoggedIn
+              ? "bg-zinc-200 hover:bg-zinc-300 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white"
+              : "bg-zinc-300 hover:bg-zinc-400 text-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:text-zinc-300"
+          }
+          ${loading ? "opacity-50 cursor-not-allowed" : ""}
+        `}
       >
-        {liked ? "❤️ Liked" : "👍 Like this"} 
+        {liked ? "❤️ Liked" : "🤍 Like"} 
         <span className="text-[0.65rem] text-zinc-500 dark:text-zinc-400">({likes})</span>
       </button>
     </div>

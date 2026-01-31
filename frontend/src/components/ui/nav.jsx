@@ -175,6 +175,7 @@ export default function Nav() {
                                                 accept="image/*"
                                                 onChange={handleImageUpload}
                                                 className="hidden"
+                                                placeholder='upload the profile pic'
                                             />
                                         </label>
                                     )}

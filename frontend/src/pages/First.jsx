@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap, Trophy, ChevronRight, Activity, Terminal, Star } from 'lucide-react';
@@ -7,6 +7,13 @@ import Footer from './Footer';
 
 const TypeSprintHome = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const email = localStorage.getItem("userEmail");
+    setIsLoggedIn(!!(token && email));
+  }, []);
 
   // Smoother, more subtle animation variants
   const containerVariants = {
@@ -90,7 +97,7 @@ const TypeSprintHome = () => {
               <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
             </button>
             <button
-              onClick={() => navigate('/leader')}
+              onClick={() => navigate('/leaderboard')}
               className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-slate-50 dark:hover:bg-white/10 dark:hover:border-white/20 dark:hover:text-white"
             >
               Leaderboard
@@ -158,7 +165,7 @@ const TypeSprintHome = () => {
           ))}
         </div>
       </section>
-      <Footer/>
+      <Footer isLoggedIn={isLoggedIn} />
     </div>
   );
 };
