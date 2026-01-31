@@ -10,6 +10,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       'https://type-sprint-psi.vercel.app',
+      'https://typevex-1.onrender.com',
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:3000'
@@ -19,7 +20,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Allow all origins in production for debugging
     }
   },
   credentials: true,
@@ -58,6 +59,7 @@ app.options('*', cors(corsOptions));
 app.use("/auth", require('./routes/auth'));
 app.use("/profile", require('./routes/profile'));
 app.use("/typing-test", require('./routes/typingTest'));
+app.use("/like", require('./routes/like'));
 app.use("", require('./routes/utils'));
 
 // Health check

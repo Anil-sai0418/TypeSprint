@@ -17,27 +17,36 @@ router.get("/leaderboard/global/top", async (req, res) => {
       users.map(async (user) => {
         const profile = await UserProfile.findOne({ userId: user._id });
         return {
+          userId: user._id,
           name: user.name,
           email: user.email,
-          wpm: profile?.highestSpeed || 0,
-          accuracy: profile?.bestTest ? ((profile.bestTest / 100) * 100).toFixed(2) : 0,
+          profileImage: profile?.profileImage || null,
+          peakWpm: profile?.highestSpeed || 0,
+          avgWpm: profile?.averageSpeed || 0,
           totalTests: profile?.totalTests || 0,
-          averageSpeed: profile?.averageSpeed || 0,
-          dailyStreak: profile?.dailyStreak || 0
+          streak: profile?.dailyStreak || 0,
+          accuracy: profile?.bestTest ? ((profile.bestTest / 100) * 100).toFixed(2) : 0,
+          lastTestDate: profile?.lastTestDate || null
         };
       })
     );
 
-    // Sort by WPM (highest speed) descending, then by total tests
-    leaderboardData.sort((a, b) => {
-      if (b.wpm !== a.wpm) {
-        return b.wpm - a.wpm;
+    // Filter out users with no tests
+    const activeUsers = leaderboardData.filter(user => user.totalTests > 0);
+
+    // Sort by Peak WPM (highest speed) descending, then by total tests, then by average WPM
+    activeUsers.sort((a, b) => {
+      if (b.peakWpm !== a.peakWpm) {
+        return b.peakWpm - a.peakWpm;
       }
-      return b.totalTests - a.totalTests;
+      if (b.totalTests !== a.totalTests) {
+        return b.totalTests - a.totalTests;
+      }
+      return b.avgWpm - a.avgWpm;
     });
 
-    // Add rank
-    const rankedData = leaderboardData.slice(0, limit).map((player, index) => ({
+    // Add rank and limit results
+    const rankedData = activeUsers.slice(0, limit).map((player, index) => ({
       rank: index + 1,
       ...player
     }));
@@ -45,7 +54,7 @@ router.get("/leaderboard/global/top", async (req, res) => {
     res.send({
       success: true,
       leaderboard: rankedData,
-      total: leaderboardData.length
+      total: activeUsers.length
     });
   } catch (err) {
     res.status(500).send({ success: false, message: "Server error", error: err.message });

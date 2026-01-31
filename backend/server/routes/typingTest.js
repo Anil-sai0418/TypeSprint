@@ -25,7 +25,14 @@ router.post("/result", verifyToken, async (req, res) => {
     if (!profile) {
       profile = new UserProfile({
         userId: user._id,
-        achievements: ["First Test"]
+        achievements: ["First Test"],
+        highestSpeed: 0,
+        averageSpeed: 0,
+        totalTests: 0,
+        dailyStreak: 0,
+        bestTest: 0,
+        typingTests: [],
+        activityMap: new Map()
       });
     }
 
@@ -33,10 +40,10 @@ router.post("/result", verifyToken, async (req, res) => {
     const testDate = new Date();
     profile.typingTests.push({
       date: testDate,
-      wpm,
-      accuracy,
-      duration,
-      raw
+      wpm: Math.round(wpm),
+      accuracy: Math.round(accuracy),
+      duration: duration,
+      raw: raw || Math.round(wpm)
     });
 
     // Update statistics
@@ -109,6 +116,7 @@ router.post("/result", verifyToken, async (req, res) => {
       }
     });
   } catch (err) {
+    console.error("Error saving test result:", err);
     res.status(500).send({ success: false, message: "Server error", error: err.message });
   }
 });
