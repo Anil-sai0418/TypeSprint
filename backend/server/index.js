@@ -9,7 +9,11 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://typevex.vercel.app"
+    "https://typevex.vercel.app",
+    "https://157.50.99.17",
+    "http://157.50.99.17",
+    "http://157.50.99.17:*",
+    "https://157.50.99.17:*"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
