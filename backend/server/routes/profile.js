@@ -26,7 +26,9 @@ router.get("/leaderboard/global/top", async (req, res) => {
           totalTests: profile?.totalTests || 0,
           streak: profile?.dailyStreak || 0,
           accuracy: profile?.bestTest ? ((profile.bestTest / 100) * 100).toFixed(2) : 0,
-          lastTestDate: profile?.lastTestDate || null
+          lastTestDate: profile?.lastTestDate || null,
+          phone: profile?.phone || null,
+          location: profile?.address || null
         };
       })
     );
