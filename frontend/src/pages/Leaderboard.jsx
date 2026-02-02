@@ -25,6 +25,9 @@ export default function Leaderboard() {
   const debounceRef = useRef(null);
 
   const [expandedRow, setExpandedRow] = useState(null);
+
+  // Sort state
+  const [sortBy, setSortBy] = useState("peak");
   
   const itemsPerPage = 10;
 
@@ -38,9 +41,20 @@ export default function Leaderboard() {
       );
     }
 
+    // Sort
+    if (sortBy === "peak") {
+      filtered = [...filtered].sort((a, b) => b.peakWpm - a.peakWpm);
+    } else if (sortBy === "avg") {
+      filtered = [...filtered].sort((a, b) => b.avgWpm - a.avgWpm);
+    } else if (sortBy === "accuracy") {
+      filtered = [...filtered].sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0));
+    } else if (sortBy === "streak") {
+      filtered = [...filtered].sort((a, b) => b.streak - a.streak);
+    }
+
     setFilteredLeaders(filtered);
     setCurrentPage(1); // Reset to first page when search changes
-  }, [allLeaders, debouncedQuery]);
+  }, [allLeaders, debouncedQuery, sortBy]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -111,35 +125,38 @@ export default function Leaderboard() {
 
       <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
         
-        {/* Header */}
-        <div className="mb-8">
-          <div className="mb-4">
-            <h1 className="text-4xl font-bold mb-2">🏆 Leaderboard</h1>
-            <p className="text-muted-foreground">
-              Top typists ranked by peak speed. {filteredLeaders.length} players
-            </p>
-          </div>
+        {/* Premium Header with filter/sort */}
+        <div className="mb-10">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight mb-1">Leaderboard</h1>
+              <p className="text-muted-foreground">
+                Ranked by performance · {filteredLeaders.length} players
+              </p>
+            </div>
 
-          {/* <div className="flex items-center gap-2 mt-4">
-            {["All Time", "This Month", "This Week"].map((label) => (
-              <button
-                key={label}
-                className="px-3 py-1.5 rounded-md text-sm font-medium border border-input hover:bg-muted transition"
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search player…"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="pl-10 h-10"
+                />
+              </div>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
-                {label}
-              </button>
-            ))}
-          </div> */}
-
-          {/* Search Filter */}
-          <div className="relative w-[50%] mt-4">
-            <Search className="absolute left-3  top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by player name..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="pl-10 py-2 h-10"
-            />
+                <option value="peak">Sort by Peak WPM</option>
+                <option value="avg">Sort by Avg WPM</option>
+                <option value="accuracy">Sort by Accuracy</option>
+                <option value="streak">Sort by Streak</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -385,27 +402,26 @@ export default function Leaderboard() {
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && filteredLeaders.length === 0 && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">📊</div>
-            <p className="text-xl text-muted-foreground mb-2">
-              {searchQuery ? "No players found matching your search" : "No leaderboard data yet"}
-            </p>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery
-                ? "Try searching for a different player name"
-                : "Complete your first typing test to appear on the leaderboard!"}
-            </p>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition"
-              >
-                Clear Search
-              </button>
-            )}
-          </div>
-        )}
+      {!isLoading && !error && filteredLeaders.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <p className="text-lg font-medium text-foreground mb-1">
+            {searchQuery ? "No matching players" : "Leaderboard is empty"}
+          </p>
+          <p className="text-sm text-muted-foreground mb-6 max-w-md">
+            {searchQuery
+              ? "Try a different name or clear the search to see all players."
+              : "Once players complete typing tests, rankings will appear here."}
+          </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="h-10 px-4 rounded-md border border-input text-sm font-medium hover:bg-muted transition"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      )}
       </div>
 
       <Footer isLoggedIn={isLoggedIn} />
