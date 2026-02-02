@@ -1,41 +1,37 @@
 import React from 'react';
-import { Button } from '../../../components/ui/button';
-import { RotateCcw, Plus, Settings, Trophy } from 'lucide-react';
 
-export default function ActionButtons({ onTryAgain, onNewTest, onSettings, onLeaderboard }) {
+import { RotateCcw, Plus, Settings, Trophy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+export default function ActionButtons({ onTryAgain, onNewTest,  }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="w-full max-w-6xl">
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 p-8 md:p-12">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-8 text-center">What's Next?</h3>
+    <div className="w- max-w-6xl mx-auto">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4">
+        <h3 className="mb-3 text-center text-lg font-semibold tracking-tight text-gray-800 dark:text-gray-100">
+          What’s next
+        </h3>
         
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-6">
           <ActionButton
             icon={RotateCcw}
             label="Try Again"
             description="Same text"
             onClick={onTryAgain}
-            color="green"
+            primary
           />
           <ActionButton
             icon={Plus}
             label="New Test"
             description="Fresh text"
             onClick={onNewTest}
-            color="blue"
-          />
-          <ActionButton
-            icon={Settings}
-            label="Settings"
-            description="Configure test"
-            onClick={onSettings}
-            color="purple"
           />
           <ActionButton
             icon={Trophy}
             label="Leaderboard"
             description="View rankings"
-            onClick={onLeaderboard}
-            color="orange"
+            onClick={() => navigate('/leaderboard')}
           />
         </div>
       </div>
@@ -43,39 +39,49 @@ export default function ActionButtons({ onTryAgain, onNewTest, onSettings, onLea
   );
 }
 
-const ActionButton = ({ icon: IconComp, label, description, onClick, color }) => {
-  const colorMap = {
-    green: {
-      bg: 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700',
-      icon: 'text-white'
-    },
-    blue: {
-      bg: 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700',
-      icon: 'text-white'
-    },
-    purple: {
-      bg: 'bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700',
-      icon: 'text-white'
-    },
-    orange: {
-      bg: 'bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700',
-      icon: 'text-white'
-    }
-  };
-
-  const colors = colorMap[color] || colorMap.blue;
-
+const ActionButton = ({ icon: IconComp, label, description, onClick, primary = false }) => {
   return (
     <button
       onClick={onClick}
-      className={`group flex flex-col items-center justify-center gap-3 p-6 rounded-xl ${colors.bg} text-white font-semibold shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95`}
+      className={`group relative flex items-center gap-4 rounded-xl px-5 py-4 h-full w-full sm:w-[260px] transition-all duration-200 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 ${
+        primary
+          ? 'border border-gray-300/60 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur-md text-gray-900 dark:text-gray-100 shadow-md hover:-translate-y-0.5 hover:shadow-xl focus-visible:ring-gray-400/60 dark:focus-visible:ring-gray-600/60'
+          : 'border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-indigo-500/60 dark:focus-visible:ring-indigo-400/60'
+      }`}
     >
-      <div className="p-3 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors">
-        <IconComp className="w-6 h-6" />
+      <div
+        className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
+          primary
+            ? 'bg-gray-900/5 dark:bg-white/10 text-gray-900 dark:text-gray-100'
+            : 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200 group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:group-hover:bg-indigo-950 dark:group-hover:text-indigo-400'
+        }`}
+      >
+        <IconComp className="h-5 w-5" />
       </div>
-      <div className="text-center">
-        <p className="font-bold text-sm md:text-base">{label}</p>
-        <p className="text-xs opacity-90">{description}</p>
+
+      <div className="relative z-10 flex-1 text-left">
+        <p
+          className={`text-sm font-semibold ${
+            primary ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900 dark:text-gray-100'
+          }`}
+        >
+          {label}
+        </p>
+        <p
+          className={`text-xs ${
+            primary ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          {description}
+        </p>
+        {!primary && (
+          <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-1 dark:text-indigo-400">
+            Open
+            <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </span>
+        )}
       </div>
     </button>
   );

@@ -86,7 +86,7 @@ export default function Result({
         <DetailedStats results={results} />
 
         {/* Performance Breakdown */}
-        <PerformanceBreakdown results={results} />
+        {/* <PerformanceBreakdown results={results} /> */}
 
         {/* Action Buttons */}
         <ActionButtons 
