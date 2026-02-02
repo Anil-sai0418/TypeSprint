@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Navigation from "@/components/ui/Navagation";
 import Footer from "./Footer";
 import { getLeaderboard } from "../services/api";
@@ -21,8 +21,26 @@ export default function Leaderboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debounceRef = useRef(null);
+
+  const [expandedRow, setExpandedRow] = useState(null);
   
   const itemsPerPage = 10;
+
+  const filterLeaders = useCallback(() => {
+    let filtered = allLeaders;
+
+    // Filter by name
+    if (debouncedQuery.trim()) {
+      filtered = allLeaders.filter((leader) =>
+        leader.name.toLowerCase().includes(debouncedQuery.toLowerCase())
+      );
+    }
+
+    setFilteredLeaders(filtered);
+    setCurrentPage(1); // Reset to first page when search changes
+  }, [allLeaders, debouncedQuery]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -32,9 +50,8 @@ export default function Leaderboard() {
   }, []);
 
   useEffect(() => {
-    filterAndPaginateLeaders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allLeaders, searchQuery, currentPage]);
+    filterLeaders();
+  }, [filterLeaders]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -55,22 +72,17 @@ export default function Leaderboard() {
     }
   };
 
-  const filterAndPaginateLeaders = () => {
-    let filtered = allLeaders;
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
 
-    // Filter by name
-    if (searchQuery.trim()) {
-      filtered = allLeaders.filter((leader) =>
-        leader.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
 
-    setFilteredLeaders(filtered);
-    setCurrentPage(1);
-  };
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(value);
+    }, 400);
   };
 
   // Pagination
@@ -108,9 +120,20 @@ export default function Leaderboard() {
             </p>
           </div>
 
+          {/* <div className="flex items-center gap-2 mt-4">
+            {["All Time", "This Month", "This Week"].map((label) => (
+              <button
+                key={label}
+                className="px-3 py-1.5 rounded-md text-sm font-medium border border-input hover:bg-muted transition"
+              >
+                {label}
+              </button>
+            ))}
+          </div> */}
+
           {/* Search Filter */}
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <div className="relative w-[50%] mt-4">
+            <Search className="absolute left-3  top-3 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by player name..."
               value={searchQuery}
@@ -120,11 +143,14 @@ export default function Leaderboard() {
           </div>
         </div>
 
-        {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mb-4"></div>
-            <p className="text-muted-foreground">Loading leaderboard...</p>
+          <div className="space-y-3 py-10">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-12 rounded-lg bg-muted/50 animate-pulse"
+              />
+            ))}
           </div>
         )}
 
@@ -141,6 +167,28 @@ export default function Leaderboard() {
           </div>
         )}
 
+        {/* {!isLoading && !error && filteredLeaders.length >= 3 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            {[0, 1, 2].map((i) => {
+              const player = filteredLeaders[i];
+              return (
+                <div
+                  key={player.rank}
+                  className={`rounded-xl border bg-card p-4 text-center ${
+                    i === 0 ? "border-yellow-400/50" : ""
+                  }`}
+                >
+                  <div className="text-3xl mb-2">
+                    {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}
+                  </div>
+                  <p className="font-semibold">{player.name}</p>
+                  <p className="text-sm text-muted-foreground">{player.peakWpm} WPM</p>
+                </div>
+              );
+            })}
+          </div>
+        )} */}
+
         {/* Table */}
         {!isLoading && !error && filteredLeaders.length > 0 && (
           <>
@@ -151,104 +199,140 @@ export default function Leaderboard() {
                     <TableHead className="w-16 text-center font-bold">Rank</TableHead>
                     <TableHead className="font-bold">Player</TableHead>
                     <TableHead className="text-right font-bold">
-                      <div className="flex items-center justify-end gap-1">
-                        <Zap className="h-4 w-4" />
-                        Peak WPM
-                      </div>
+                      Peak WPM
                     </TableHead>
                     <TableHead className="text-right font-bold">
-                      <div className="flex items-center justify-end gap-1">
-                        <TrendingUp className="h-4 w-4" />
-                        Avg WPM
-                      </div>
+                      Avg WPM
+                    </TableHead>
+                    <TableHead className="text-right font-bold">Accuracy</TableHead>
+                    <TableHead className="text-right font-bold">
+                      Streak
                     </TableHead>
                     <TableHead className="text-right font-bold">
-                      <div className="flex items-center justify-end gap-1">
-                        <Flame className="h-4 w-4" />
-                        Streak
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-right font-bold">
-                      <div className="flex items-center justify-end gap-1">
-                        <Target className="h-4 w-4" />
-                        Tests
-                      </div>
+                      Tests
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {currentLeaders.map((player) => (
-                    <TableRow key={player.rank} className="hover:bg-muted/50 transition-colors">
-                      {/* Rank */}
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center">
-                          {getMedalIcon(player.rank) ? (
-                            <span className="text-2xl">{getMedalIcon(player.rank)}</span>
-                          ) : (
-                            <span className={`text-lg font-bold ${getRankColor(player.rank)}`}>
-                              #{player.rank}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      {/* Player Info */}
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {player.profileImage ? (
-                            <img
-                              src={player.profileImage}
-                              alt={player.name}
-                              className="w-10 h-10 rounded-full object-cover border border-border"
+                    <>
+                      <TableRow
+                        key={player.rank}
+                        onClick={() =>
+                          setExpandedRow(expandedRow === player.rank ? null : player.rank)
+                        }
+                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                          player.email === localStorage.getItem("userEmail")
+                            ? "bg-primary/5"
+                            : ""
+                        }`}
+                      >
+                        {/* Rank */}
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center">
+                            {getMedalIcon(player.rank) ? (
+                              <span className="text-2xl">{getMedalIcon(player.rank)}</span>
+                            ) : (
+                              <span className={`text-lg font-bold ${getRankColor(player.rank)}`}>
+                                #{player.rank}
+                              </span>
+                            )}
+                            <ChevronRight
+                              className={`h-3 w-3 ml-1 text-muted-foreground transition-transform ${
+                                expandedRow === player.rank ? "rotate-90" : ""
+                              }`}
                             />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                              {player.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-semibold text-foreground">{player.name}</p>
-                            <p className="text-xs text-muted-foreground">{player.email}</p>
                           </div>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Peak WPM */}
-                      <TableCell className="text-right">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                          <span className="font-bold text-green-700 dark:text-green-400">
-                            {player.peakWpm}
-                          </span>
-                        </div>
-                      </TableCell>
+                        {/* Player Info */}
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {player.profileImage ? (
+                              <img
+                                src={player.profileImage}
+                                alt={player.name}
+                                className="w-10 h-10 rounded-full object-cover border border-border"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-muted border flex items-center justify-center font-semibold text-sm">
+                                {player.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold text-foreground">{player.name}</p>
+                              <p className="text-xs text-muted-foreground">{player.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
 
-                      {/* Average WPM */}
-                      <TableCell className="text-right">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                          <span className="font-bold text-purple-700 dark:text-purple-400">
-                            {player.avgWpm}
-                          </span>
-                        </div>
-                      </TableCell>
+                        {/* Peak WPM */}
+                        <TableCell className="text-right">
+                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                            <span className="font-semibold">
+                              {player.peakWpm}
+                            </span>
+                          </div>
+                        </TableCell>
 
-                      {/* Streak */}
-                      <TableCell className="text-right">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-                          <span className="font-bold text-orange-700 dark:text-orange-400">
-                            {player.streak}
-                          </span>
-                        </div>
-                      </TableCell>
+                        {/* Average WPM */}
+                        <TableCell className="text-right">
+                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                            <span className="font-semibold">
+                              {player.avgWpm}
+                            </span>
+                          </div>
+                        </TableCell>
 
-                      {/* Tests */}
-                      <TableCell className="text-right">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                          <span className="font-bold text-blue-700 dark:text-blue-400">
-                            {player.totalTests}
+                        <TableCell className="text-right">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {player.accuracy ?? "--"}%
                           </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+
+                        {/* Streak */}
+                        <TableCell className="text-right">
+                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                            <span className="font-semibold">
+                              {player.streak}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        {/* Tests */}
+                        <TableCell className="text-right">
+                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                            <span className="font-semibold">
+                              {player.totalTests}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {expandedRow === player.rank && (
+                        <TableRow className="bg-muted/20">
+                          <TableCell colSpan={7}>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Phone</p>
+                                <p className="font-medium">{player.phone ?? "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Location</p>
+                                <p className="font-medium">{player.location ?? "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Streak</p>
+                                <p className="font-medium">{player.streak}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Total Tests</p>
+                                <p className="font-medium">{player.totalTests}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
                 </TableBody>
               </Table>
