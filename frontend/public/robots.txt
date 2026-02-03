@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+
+Disallow: /Login
+
+
+
+# Sitemap (we will add this file next)
+Sitemap: https://task-manager-anil.vercel.app/sitemap.xml
