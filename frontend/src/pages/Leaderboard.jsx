@@ -126,50 +126,94 @@ export default function Leaderboard() {
       <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
         
         {/* Premium Header with filter/sort */}
-        <div className="mb-10">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight mb-1">Leaderboard</h1>
-              <p className="text-muted-foreground">
-                Ranked by performance · {filteredLeaders.length} players
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search player…"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                  className="pl-10 h-10"
-                />
+        {isLoading ? (
+          <div className="space-y-8 py-6">
+            {/* Header Skeleton */}
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <div className="h-10 w-56 rounded-md bg-muted/50 animate-pulse" />
+                <div className="h-4 w-40 rounded-md bg-muted/40 animate-pulse" />
               </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                <option value="peak">Sort by Peak WPM</option>
-                <option value="avg">Sort by Avg WPM</option>
-                <option value="accuracy">Sort by Accuracy</option>
-                <option value="streak">Sort by Streak</option>
-              </select>
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <div className="h-11 w-64 rounded-md bg-muted/50 animate-pulse" />
+                <div className="h-10 w-40 rounded-md bg-muted/40 animate-pulse" />
+              </div>
+            </div>
+
+            {/* Table Skeleton */}
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <div className="bg-muted/50 h-12" />
+              {Array.from({ length: itemsPerPage }).map((_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-7 gap-4 items-center px-4 py-3 border-t"
+                >
+                  {/* Rank */}
+                  <div className="h-6 w-10 rounded-md bg-muted/40 animate-pulse" />
+
+                  {/* Player */}
+                  <div className="flex items-center gap-3 col-span-2">
+                    <div className="h-10 w-10 rounded-full bg-muted/50 animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 rounded bg-muted/50 animate-pulse" />
+                      <div className="h-3 w-32 rounded bg-muted/40 animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Peak */}
+                  <div className="h-6 w-14 rounded-md bg-muted/40 animate-pulse justify-self-end" />
+
+                  {/* Avg */}
+                  <div className="h-6 w-14 rounded-md bg-muted/40 animate-pulse justify-self-end" />
+
+                  {/* Accuracy */}
+                  <div className="h-4 w-10 rounded bg-muted/30 animate-pulse justify-self-end" />
+
+                  {/* Streak */}
+                  <div className="h-6 w-12 rounded-md bg-muted/40 animate-pulse justify-self-end" />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Premium Header with filter/sort */}
+            {!isLoading && (
+              <div className="mb-10">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h1 className="text-4xl font-bold tracking-tight mb-1">Leaderboard</h1>
+                    <p className="text-muted-foreground">
+                      Ranked by performance · {filteredLeaders.length} players
+                    </p>
+                  </div>
 
-        {isLoading && (
-          <div className="space-y-3 py-10">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-12 rounded-lg bg-muted/50 animate-pulse"
-              />
-            ))}
-          </div>
-        )}
+                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search player…"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        className="pl-10 h-10"
+                      />
+                    </div>
+
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
+                      <option value="peak">Sort by Peak WPM</option>
+                      <option value="avg">Sort by Avg WPM</option>
+                      <option value="accuracy">Sort by Accuracy</option>
+                      <option value="streak">Sort by Streak</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
 
         {/* Error State */}
         {error && !isLoading && (
@@ -206,197 +250,199 @@ export default function Leaderboard() {
           </div>
         )} */}
 
-        {/* Table */}
-        {!isLoading && !error && filteredLeaders.length > 0 && (
-          <>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow className="border-b hover:bg-muted/50">
-                    <TableHead className="w-16 text-center font-bold">Rank</TableHead>
-                    <TableHead className="font-bold">Player</TableHead>
-                    <TableHead className="text-right font-bold">
-                      Peak WPM
-                    </TableHead>
-                    <TableHead className="text-right font-bold">
-                      Avg WPM
-                    </TableHead>
-                    <TableHead className="text-right font-bold">Accuracy</TableHead>
-                    <TableHead className="text-right font-bold">
-                      Streak
-                    </TableHead>
-                    <TableHead className="text-right font-bold">
-                      Tests
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentLeaders.map((player) => (
-                    <>
-                      <TableRow
-                        key={player.rank}
-                        onClick={() =>
-                          setExpandedRow(expandedRow === player.rank ? null : player.rank)
-                        }
-                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                          player.email === localStorage.getItem("userEmail")
-                            ? "bg-primary/5"
-                            : ""
-                        }`}
-                      >
-                        {/* Rank */}
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center">
-                            {getMedalIcon(player.rank) ? (
-                              <span className="text-2xl">{getMedalIcon(player.rank)}</span>
-                            ) : (
-                              <span className={`text-lg font-bold ${getRankColor(player.rank)}`}>
-                                #{player.rank}
-                              </span>
-                            )}
-                            <ChevronRight
-                              className={`h-3 w-3 ml-1 text-muted-foreground transition-transform ${
-                                expandedRow === player.rank ? "rotate-90" : ""
-                              }`}
-                            />
-                          </div>
-                        </TableCell>
-
-                        {/* Player Info */}
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            {player.profileImage ? (
-                              <img
-                                src={player.profileImage}
-                                alt={player.name}
-                                className="w-10 h-10 rounded-full object-cover border border-border"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-muted border flex items-center justify-center font-semibold text-sm">
-                                {player.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-semibold text-foreground">{player.name}</p>
-                              <p className="text-xs text-muted-foreground">{player.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        {/* Peak WPM */}
-                        <TableCell className="text-right">
-                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
-                            <span className="font-semibold">
-                              {player.peakWpm}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        {/* Average WPM */}
-                        <TableCell className="text-right">
-                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
-                            <span className="font-semibold">
-                              {player.avgWpm}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {player.accuracy ?? "--"}%
-                          </span>
-                        </TableCell>
-
-                        {/* Streak */}
-                        <TableCell className="text-right">
-                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
-                            <span className="font-semibold">
-                              {player.streak}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        {/* Tests */}
-                        <TableCell className="text-right">
-                          <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
-                            <span className="font-semibold">
-                              {player.totalTests}
-                            </span>
-                          </div>
-                        </TableCell>
+            {/* Table */}
+            {!error && filteredLeaders.length > 0 && (
+              <>
+                <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow className="border-b hover:bg-muted/50">
+                        <TableHead className="w-16 text-center font-bold">Rank</TableHead>
+                        <TableHead className="font-bold">Player</TableHead>
+                        <TableHead className="text-right font-bold">
+                          Peak WPM
+                        </TableHead>
+                        <TableHead className="text-right font-bold">
+                          Avg WPM
+                        </TableHead>
+                        <TableHead className="text-right font-bold">Accuracy</TableHead>
+                        <TableHead className="text-right font-bold">
+                          Streak
+                        </TableHead>
+                        <TableHead className="text-right font-bold">
+                          Tests
+                        </TableHead>
                       </TableRow>
-                      {expandedRow === player.rank && (
-                        <TableRow className="bg-muted/20">
-                          <TableCell colSpan={7}>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Phone</p>
-                                <p className="font-medium">{player.phone ?? "—"}</p>
+                    </TableHeader>
+                    <TableBody>
+                      {currentLeaders.map((player) => (
+                        <>
+                          <TableRow
+                            key={player.rank}
+                            onClick={() =>
+                              setExpandedRow(expandedRow === player.rank ? null : player.rank)
+                            }
+                            className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                              player.email === localStorage.getItem("userEmail")
+                                ? "bg-primary/5"
+                                : ""
+                            }`}
+                          >
+                            {/* Rank */}
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center">
+                                {getMedalIcon(player.rank) ? (
+                                  <span className="text-2xl">{getMedalIcon(player.rank)}</span>
+                                ) : (
+                                  <span className={`text-lg font-bold ${getRankColor(player.rank)}`}>
+                                    #{player.rank}
+                                  </span>
+                                )}
+                                <ChevronRight
+                                  className={`h-3 w-3 ml-1 text-muted-foreground transition-transform ${
+                                    expandedRow === player.rank ? "rotate-90" : ""
+                                  }`}
+                                />
                               </div>
-                              <div>
-                                <p className="text-muted-foreground">Location</p>
-                                <p className="font-medium">{player.location ?? "—"}</p>
+                            </TableCell>
+
+                            {/* Player Info */}
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {player.profileImage ? (
+                                  <img
+                                    src={player.profileImage}
+                                    alt={player.name}
+                                    className="w-10 h-10 rounded-full object-cover border border-border"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-muted border flex items-center justify-center font-semibold text-sm">
+                                    {player.name.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-semibold text-foreground">{player.name}</p>
+                                  <p className="text-xs text-muted-foreground">{player.email}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-muted-foreground">Streak</p>
-                                <p className="font-medium">{player.streak}</p>
+                            </TableCell>
+
+                            {/* Peak WPM */}
+                            <TableCell className="text-right">
+                              <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                                <span className="font-semibold">
+                                  {player.peakWpm}
+                                </span>
                               </div>
-                              <div>
-                                <p className="text-muted-foreground">Total Tests</p>
-                                <p className="font-medium">{player.totalTests}</p>
+                            </TableCell>
+
+                            {/* Average WPM */}
+                            <TableCell className="text-right">
+                              <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                                <span className="font-semibold">
+                                  {player.avgWpm}
+                                </span>
                               </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                            </TableCell>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 px-4 py-4 bg-muted/30 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredLeaders.length)} of{" "}
-                  {filteredLeaders.length} players
-                </p>
+                            <TableCell className="text-right">
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {player.accuracy ?? "--"}%
+                              </span>
+                            </TableCell>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
+                            {/* Streak */}
+                            <TableCell className="text-right">
+                              <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                                <span className="font-semibold">
+                                  {player.streak}
+                                </span>
+                              </div>
+                            </TableCell>
 
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`inline-flex items-center justify-center h-8 w-8 rounded-md text-sm font-medium transition ${
-                          currentPage === page
-                            ? "bg-primary text-primary-foreground"
-                            : "border border-input hover:bg-muted"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                            {/* Tests */}
+                            <TableCell className="text-right">
+                              <div className="inline-flex items-center px-3 py-1 rounded-md bg-muted border">
+                                <span className="font-semibold">
+                                  {player.totalTests}
+                                </span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {expandedRow === player.rank && (
+                            <TableRow className="bg-muted/20">
+                              <TableCell colSpan={7}>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 text-sm">
+                                  <div>
+                                    <p className="text-muted-foreground">Phone</p>
+                                    <p className="font-medium">{player.phone ?? "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Location</p>
+                                    <p className="font-medium">{player.location ?? "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Streak</p>
+                                    <p className="font-medium">{player.streak}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Total Tests</p>
+                                    <p className="font-medium">{player.totalTests}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6 px-4 py-4 bg-muted/30 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredLeaders.length)} of{" "}
+                      {filteredLeaders.length} players
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`inline-flex items-center justify-center h-8 w-8 rounded-md text-sm font-medium transition ${
+                              currentPage === page
+                                ? "bg-primary text-primary-foreground"
+                                : "border border-input hover:bg-muted"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

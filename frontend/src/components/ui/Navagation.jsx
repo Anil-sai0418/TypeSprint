@@ -126,7 +126,7 @@ export default function Navigation() {
       </span>
       {/* Desktop Links */}
       <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-        <NavLink to="/home" className={linkClass}>
+        <NavLink to="/type" className={linkClass}>
           Type
         </NavLink>
         <NavLink to="/learning" className={linkClass}>
@@ -159,7 +159,7 @@ export default function Navigation() {
                   <img
                     src={userDetails.profileImage}
                     alt="Profile"
-                    className="h-6 w-6 rounded-full object-cover"
+                    className="h-8 w-8 rounded-full object-cover"
                   />
                 ) : (
                   <UserCircle className="h-6 w-6 text-muted-foreground" />
