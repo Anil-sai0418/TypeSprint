@@ -10,12 +10,21 @@ import Profile from '../pages/Profile';
 import TypingTest from '../routes/type/page';
 import TypingLoader from '../Loding/Loading';
 import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
+import NotificationList from '../components/notification/NotificationList';
 
 /**
  * App Routes Configuration
  * Define all application routes here
  */
 const routes = [
+  {
+    path: '/notifications',
+    element: (
+      <ProtectedRoute>
+        <NotificationList />
+      </ProtectedRoute>
+    )
+  },
   {
     path: '*',
     element: <NotFound />

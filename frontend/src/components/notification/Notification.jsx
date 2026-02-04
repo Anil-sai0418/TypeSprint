@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 const Notification = () => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -69,7 +71,13 @@ const Notification = () => {
 
           {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-100 dark:border-zinc-800 text-center">
-            <button className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/notifications");
+              }}
+              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
               View all notifications
             </button>
           </div>
