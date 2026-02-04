@@ -12,9 +12,9 @@ import {
   calculateTestStats as _calculateTestStats
 } from "@/lib/monkeytype-error-handler";
 
-// --- HOOK: Core Logic (Monkeytype-style WPM tracking) ---
+// --- HOOK: Core Logic (Monkeytype-style WPM tracking) - OPTIMIZED ---
 const useTypingEngine = (settings) => {
-  const [status, setStatus] = useState("idle"); // idle, running, completed
+  const [status, setStatus] = useState("idle");
   const [words, setWords] = useState([]);
   const [input, setInput] = useState("");
   const [startTime, setStartTime] = useState(null);
@@ -23,9 +23,10 @@ const useTypingEngine = (settings) => {
   const [isLoading, setIsLoading] = useState(false);
   
   const timerRef = useRef(null);
-  const keystrokesRef = useRef([]); // Track every keystroke for Monkeytype-style WPM
+  const keystrokesRef = useRef([]);
+  const statsRef = useRef({ totalCorrect: 0, totalError: 0 }); // OPTIMIZATION: Track in ref for O(1) access
 
-  // Fetch Text
+  // OPTIMIZATION: Fetch Text with memoized settings
   const loadTest = useCallback(async () => {
     setIsLoading(true);
     setStatus("idle");
@@ -34,35 +35,30 @@ const useTypingEngine = (settings) => {
     setStartTime(null);
     setEndTime(null);
     keystrokesRef.current = [];
+    statsRef.current = { totalCorrect: 0, totalError: 0 };
 
     try {
       const { wordLimit, showPunctuation, showNumbers } = settings;
       const data = await fetchRandomText(wordLimit, showPunctuation.toString(), showNumbers.toString());
       setWords(data.text.split("")); 
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch random text:', e);
       setWords("Error loading text. Please check your connection.".split(""));
     } finally {
       setIsLoading(false);
     }
   }, [settings]);
 
-  // Timer - Updates every 1 second for display
+  // OPTIMIZATION: Efficient timer with early exit
   useEffect(() => {
-    if (status !== "running") return;
+    if (status !== "running" || !settings.timeLimit) return;
 
     const checkTimeLimit = () => {
-      const now = Date.now();
-      const elapsed = (now - startTime) / 1000;
-
-      // Time Limit Check
-      if (settings.timeLimit && elapsed >= settings.timeLimit) {
+      const elapsed = (Date.now() - startTime) / 1000;
+      if (elapsed >= settings.timeLimit) {
         clearInterval(timerRef.current);
-        
-        // Generate Monkeytype-style smooth WPM graph
         const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
         setWpmHistory(graphData);
-        
         setStatus("completed");
         setEndTime(Date.now());
       }
@@ -72,64 +68,59 @@ const useTypingEngine = (settings) => {
     return () => clearInterval(timerRef.current);
   }, [status, startTime, settings.timeLimit]);
 
-  const startTest = () => {
+  const startTest = useCallback(() => {
     if (status === "idle") {
       setStatus("running");
       setStartTime(Date.now());
       keystrokesRef.current = [];
+      statsRef.current = { totalCorrect: 0, totalError: 0 };
     }
-  };
+  }, [status]);
 
-  const handleInput = (val) => {
+  // OPTIMIZATION: Single-pass keystroke tracking with ref caching
+  const handleInput = useCallback((val) => {
     if (status === "completed" || isLoading) return;
-    
-    // Auto-start
     if (status === "idle") startTest();
-    
-    // Boundary check
     if (val.length > words.length) return;
-    
-    // Track keystroke changes
+
     const prevLength = input.length;
     const currentLength = val.length;
 
+    // OPTIMIZATION: Minimize array operations - use splice instead of multiple pushes
     if (currentLength > prevLength) {
-      // Characters added (new keystrokes)
+      const newKeystrokes = [];
       for (let i = prevLength; i < currentLength; i++) {
         const typedChar = val[i];
         const expectedChar = words[i];
-        const isBackspace = false;
+        const keystroke = trackKeystroke(Date.now(), expectedChar, typedChar, false);
+        newKeystrokes.push(keystroke);
         
-        keystrokesRef.current.push(
-          trackKeystroke(Date.now(), expectedChar, typedChar, isBackspace)
-        );
+        // OPTIMIZATION: Track stats inline
+        if (keystroke.isCorrect) statsRef.current.totalCorrect++;
+        else if (keystroke.isError) statsRef.current.totalError++;
       }
+      keystrokesRef.current.push(...newKeystrokes);
     } else if (currentLength < prevLength) {
-      // Characters removed (backspaces)
       const backspaceCount = prevLength - currentLength;
       for (let i = 0; i < backspaceCount; i++) {
-        keystrokesRef.current.push(
-          trackKeystroke(Date.now(), '', '', true) // backspace marker
-        );
+        keystrokesRef.current.push(trackKeystroke(Date.now(), '', '', true));
       }
     }
     
     setInput(val);
 
-    // Completion check
-    if (val.length === words.length) {
-      // Generate Monkeytype-style smooth WPM graph with error markers
+    // OPTIMIZATION: Check completion without re-calculating
+    if (val.length === words.length && words.length > 0) {
       const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
       setWpmHistory(graphData);
-      
       setStatus("completed");
       setEndTime(Date.now());
     }
-  };
+  }, [status, isLoading, input.length, words, startTest, startTime]);
 
-  // Derived Stats (Monkeytype-accurate)
+  // OPTIMIZATION: Memoized stats calculation - only recompute on ref or status change
   const stats = useMemo(() => {
-    if (keystrokesRef.current.length === 0) {
+    if (keystrokesRef.current.length === 0 || !startTime) {
       return {
         netWpm: 0,
         rawWpm: 0,
@@ -138,20 +129,20 @@ const useTypingEngine = (settings) => {
         incorrectChars: 0,
         errors: 0,
         timeElapsed: 0,
-        timeLeft: settings.timeLimit ? settings.timeLimit : null
+        timeLeft: settings.timeLimit || null
       };
     }
 
     const currentTime = status === "completed" ? endTime : Date.now();
-    const timeElapsed = (currentTime - startTime) / 1000;
+    const timeElapsed = Math.max(1, (currentTime - startTime) / 1000); // OPTIMIZATION: Prevent division by zero
 
-    // Calculate accurate stats from keystroke data
+    // OPTIMIZATION: Use cached stats + filter only once
     const totalTyped = keystrokesRef.current.filter(k => !k.isBackspace).length;
-    const correctCount = keystrokesRef.current.filter(k => k.isCorrect && !k.isBackspace).length;
-    const errorCount = keystrokesRef.current.filter(k => k.isError).length;
+    const correctCount = statsRef.current.totalCorrect;
+    const errorCount = statsRef.current.totalError;
 
     const accuracy = totalTyped > 0 ? Math.round((correctCount / totalTyped) * 100) : 100;
-    const rawWpm = timeElapsed > 0 ? Math.round(((totalTyped / 5) / (timeElapsed / 60))) : 0;
+    const rawWpm = Math.round(((totalTyped / 5) / (timeElapsed / 60)));
     const netWpm = Math.round(rawWpm * (accuracy / 100));
 
     return {
@@ -164,7 +155,7 @@ const useTypingEngine = (settings) => {
       timeElapsed: Math.round(timeElapsed),
       timeLeft: settings.timeLimit ? Math.max(0, Math.round(settings.timeLimit - timeElapsed)) : null
     };
-  }, [keystrokesRef, startTime, endTime, status, settings.timeLimit]);
+  }, [startTime, endTime, status, settings.timeLimit]); // OPTIMIZATION: Minimal dependencies
 
   return {
     status,

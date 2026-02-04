@@ -1,10 +1,9 @@
 User-agent: *
 Allow: /
 
+# Block sensitive or private pages
+Disallow: /Login/
+Disallow: /login/
 
-Disallow: /Login
-
-
-
-# Sitemap (we will add this file next)
+# Host-specific sitemap
 Sitemap: https://task-manager-anil.vercel.app/sitemap.xml
