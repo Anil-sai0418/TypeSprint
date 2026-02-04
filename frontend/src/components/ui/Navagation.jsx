@@ -4,6 +4,7 @@ import { ThemeToggle } from "../ThemeToggle";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BreadcrumbNav from "../BreadcrumbNav";
+import Notification from "@/notification/notification";
 
 export default function Navigation() {
   const [open, setOpen] = useState(false);
@@ -138,6 +139,7 @@ export default function Navigation() {
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          
 
           {!isLoggedIn ? (
             <button
