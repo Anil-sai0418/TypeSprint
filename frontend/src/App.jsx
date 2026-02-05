@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import { ThemeProvider } from './context/ThemeContext'
 import NetworkProvider from './context/NetworkContext'
+import { NotificationProvider } from './context/NotificationContext'
 import { OfflineScreen, NetworkStatusBanner, ReconnectedToast } from './components/NetworkStatus'
 import { useNetworkStatus } from './context/useNetworkStatus'
 import routes from './router/routes'
@@ -38,7 +39,9 @@ function App() {
   return (
     <NetworkProvider>
       <ThemeProvider>
-        <AppContent />
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
       </ThemeProvider>
     </NetworkProvider>
   )

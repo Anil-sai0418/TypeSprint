@@ -11,6 +11,9 @@ import {
   trackKeystroke,
   calculateTestStats as _calculateTestStats
 } from "@/lib/monkeytype-error-handler";
+import { useActivityTracking, useLeaderboardTracking, useStreakTracking } from "../hooks/useNotificationHooks";
+import { useNotification } from "../context/NotificationContext";
+import { useManualNotification } from "../hooks/useManualNotification";
 
 // --- HOOK: Core Logic (Monkeytype-style WPM tracking) - OPTIMIZED ---
 const useTypingEngine = (settings) => {
@@ -175,6 +178,13 @@ const useTypingEngine = (settings) => {
 export default function TypingTest() {
   const inputRef = useRef(null);
   const [isFocused, setIsFocused] = useState(true);
+  const { addNotification } = useNotification();
+  
+  // Initialize notification tracking hooks
+  useActivityTracking();
+  useLeaderboardTracking();
+  useStreakTracking();
+  useManualNotification(); // For testing via console commands
   
   const [settings, setSettings] = useState({
     timeLimit: 30, 
@@ -182,6 +192,53 @@ export default function TypingTest() {
     showPunctuation: false,
     showNumbers: false,
   });
+
+  // Test notification on mount (remove this later)
+  useEffect(() => {
+    // Send a test notification to confirm system is working
+    const hasShownTestNotif = sessionStorage.getItem('testNotifShown');
+    if (!hasShownTestNotif) {
+      const userEmail = localStorage.getItem('userEmail');
+      const token = localStorage.getItem('token');
+      
+      // Fetch actual user streak data for test notification
+      const fetchAndNotify = async () => {
+        try {
+          if (userEmail && token) {
+            const response = await fetch(
+              `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile/${userEmail}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              }
+            );
+            if (response.ok) {
+              const data = await response.json();
+              const actualStreak = data.userProfile?.streak || 1;
+              addNotification('streak_milestone', {
+                userId: userEmail,
+                streakDays: actualStreak,
+                isMilestone: true,
+              });
+              console.log('[TypingTest] Test notification sent with actual streak:', actualStreak);
+            }
+          }
+        } catch (error) {
+          console.error('[TypingTest] Error fetching user data for test notification:', error);
+          // Fallback test notification
+          addNotification('streak_milestone', {
+            userId: userEmail,
+            streakDays: 1,
+            isMilestone: true,
+          });
+        }
+        sessionStorage.setItem('testNotifShown', 'true');
+      };
+      
+      fetchAndNotify();
+    }
+  }, [addNotification]);
 
   const { 
     status, 
