@@ -1,14 +1,16 @@
 import { NavLink } from "react-router-dom";
-import { UserCircle, Menu, X, LogOut, User, Palette, Plus } from "lucide-react";
+import { UserCircle, Menu, X, LogOut, User, Palette, Plus, Share2 } from "lucide-react";
 import { ThemeToggle } from "../ThemeToggle";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BreadcrumbNav from "../BreadcrumbNav";
 import Notification from "../notification/notification";
+import ShareModal from "../share/Share";
 
 export default function Navigation() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -197,12 +199,12 @@ export default function Navigation() {
                     <button
                       onClick={() => {
                         setUserMenuOpen(false);
-                        navigate("/room");
+                        setShareModalOpen(true);
                       }}
                       className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
                     >
-                      <Plus className="h-4 w-4" />
-                      Create Room
+                      <Share2 className="h-4 w-4" />
+                      Share this app
                     </button>
 
                     <button
@@ -271,6 +273,9 @@ export default function Navigation() {
       </nav>
 
       <BreadcrumbNav />
+
+      {/* Share Modal */}
+      <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} />
     </>
   );
 }
