@@ -26,6 +26,42 @@ export default function Leaderboard() {
 
   const [expandedRow, setExpandedRow] = useState(null);
 
+  const searchInputRef = useRef(null);
+
+  // OS detection for shortcut hint
+  const [isMac, setIsMac] = useState(false);
+  const [showShortcutPulse, setShowShortcutPulse] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(/Mac|iPhone|iPad/i.test(navigator.userAgent));
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isCmdK = isMac && e.metaKey && e.key.toLowerCase() === "k";
+      const isCtrlK = !isMac && e.ctrlKey && e.key.toLowerCase() === "k";
+      const isEsc = e.key === "Escape";
+
+      if (isCmdK || isCtrlK) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+
+        // Trigger shortcut pulse animation
+        setShowShortcutPulse(true);
+        setTimeout(() => setShowShortcutPulse(false), 500);
+      }
+
+      if (isEsc && document.activeElement === searchInputRef.current) {
+        searchInputRef.current.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMac]);
+
   // Sort state
   const [sortBy, setSortBy] = useState("peak");
   
@@ -192,12 +228,23 @@ export default function Leaderboard() {
                   <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                     <div className="relative w-full sm:w-64">
                       <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
                       <Input
+                        ref={searchInputRef}
                         placeholder="Search player…"
                         value={searchQuery}
                         onChange={handleSearch}
-                        className="pl-10 h-10"
+                        onFocus={(e) => e.target.select()}
+                        className="pl-10 pr-16 h-10"
                       />
+
+                      <span
+                        className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-transform duration-300 ${
+                          showShortcutPulse ? "scale-110" : "scale-100"
+                        }`}
+                      >
+                        {isMac ? "⌘ K" : "Ctrl K"}
+                      </span>
                     </div>
 
                     <select
@@ -322,7 +369,7 @@ export default function Leaderboard() {
                                 )}
                                 <div>
                                   <p className="font-semibold text-foreground">{player.name}</p>
-                                  <p className="text-xs text-muted-foreground">{player.email}</p>
+                                  {/* <p className="text-xs text-muted-foreground">{player.email}</p> */}
                                 </div>
                               </div>
                             </TableCell>
@@ -372,23 +419,47 @@ export default function Leaderboard() {
                           {expandedRow === player.rank && (
                             <TableRow className="bg-muted/20">
                               <TableCell colSpan={7}>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 text-sm">
-                                  <div>
-                                    <p className="text-muted-foreground">Phone</p>
-                                    <p className="font-medium">{player.phone ?? "—"}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-muted-foreground">Location</p>
-                                    <p className="font-medium">{player.location ?? "—"}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-muted-foreground">Streak</p>
-                                    <p className="font-medium">{player.streak}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-muted-foreground">Total Tests</p>
-                                    <p className="font-medium">{player.totalTests}</p>
-                                  </div>
+                                <div className="rounded-lg border bg-background p-5">
+                              {/* Changed gap-40 to gap-10 (mobile) and added lg:gap-40 (desktop) */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-40">
+
+  <div className="flex flex-col gap-1">
+    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+      Email
+    </span>
+    <span className="text-sm font-medium">
+      {player.email}
+    </span>
+  </div>
+
+  <div className="flex flex-col gap-1">
+    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+      Phone
+    </span>
+    <span className="text-sm font-medium">
+      {player.phone ?? "—"}
+    </span>
+  </div>
+
+  <div className="flex flex-col gap-1">
+    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+      Location
+    </span>
+    <span className="text-sm font-medium">
+      {player.location ?? "—"}
+    </span>
+  </div>
+
+  <div className="flex flex-col gap-1">
+    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+      Total Tests
+    </span>
+    <span className="text-sm font-medium">
+      {player.totalTests}
+    </span>
+  </div>
+
+</div>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -460,7 +531,10 @@ export default function Leaderboard() {
           </p>
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery("")}
+              onClick={() => {
+                setSearchQuery("");
+                setDebouncedQuery("");
+              }}
               className="h-10 px-4 rounded-md border border-input text-sm font-medium hover:bg-muted transition"
             >
               Clear search
