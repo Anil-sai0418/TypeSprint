@@ -52,10 +52,15 @@ export default function Register() {
   }
  
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-950 dark:via-gray-900 dark:to-black flex justify-center items-center text-white">
-      <Card className="w-full max-w-sm bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 shadow-lg">
+    <div className="w-full h-screen bg-gray-100 dark:bg-gray-950 flex justify-center items-center">
+      <Card className="w-full max-w-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-md">
         <CardHeader>
-          <CardTitle className="text-white">Register your account</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-gray-100">
+            Create your account
+          </CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
+            Enter your details to get started
+          </CardDescription>
           <CardAction>
           
           </CardAction>
@@ -93,7 +98,7 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="text-sm text-blue-500 hover:text-blue-400"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                   >
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
@@ -110,12 +115,12 @@ export default function Register() {
               </div>
             </div>
             <div className="mt-8 flex justify-center items-center">
-              <Button type="submit" className="w-[70%] text-white" disabled={isLoading}>
+              <Button type="submit" className="w-[70%]" disabled={isLoading}>
                 {isLoading ? "Registering..." : "Register"}
               </Button>
             </div>
           </form>
-          <div className="flex justify-end mt-2 text-sm text-white">
+          <div className="flex justify-end mt-2 text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{" "}
             <Button
               variant="link"
