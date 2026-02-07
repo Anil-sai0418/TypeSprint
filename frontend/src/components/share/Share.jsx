@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import {
   FaWhatsapp,
@@ -11,6 +11,24 @@ import {
 export default function ShareModal({ isOpen, onClose }) {
   const shareUrl = window.location.href;
   const [copied, setCopied] = useState(false);
+
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isOpen, onClose]);
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(shareUrl);
@@ -57,12 +75,14 @@ export default function ShareModal({ isOpen, onClose }) {
       {/* Transparent Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
-        onClick={onClose}
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300">
-        <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-gray-200 dark:border-zinc-800 animate-in fade-in zoom-in-95">
+        <div
+          ref={modalRef}
+          className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-gray-200 dark:border-zinc-800 animate-in fade-in zoom-in-95"
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 p-6">
             <h2 className="text-xl font-bold text-foreground">Share This App</h2>
@@ -110,9 +130,19 @@ export default function ShareModal({ isOpen, onClose }) {
 
             {/* Copy Link Section */}
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-3">
-                Or copy the link
-              </p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Or copy the link
+                </p>
+
+                {copied && (
+                  <span className="text-xs font-medium text-green-600 dark:text-green-400 animate-in fade-in">
+                    Link copied to clipboard ✓
+                  </span>
+                )}
+              </div>
+
+              
               <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 p-3">
                 <input
                   value={shareUrl}
@@ -126,11 +156,6 @@ export default function ShareModal({ isOpen, onClose }) {
                   {copied ? "✓ Copied" : "Copy"}
                 </button>
               </div>
-              {copied && (
-                <p className="text-xs text-green-600 dark:text-green-400 mt-2 animate-in fade-in">
-                  Link copied to clipboard!
-                </p>
-              )}
             </div>
 
             {/* QR Code or Additional Info */}
@@ -142,14 +167,14 @@ export default function ShareModal({ isOpen, onClose }) {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 dark:border-zinc-800 p-4 flex justify-end">
+          {/* <div className="border-t border-gray-200 dark:border-zinc-800 p-4 flex justify-end">
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-foreground font-medium transition-colors"
             >
               Close
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </>
