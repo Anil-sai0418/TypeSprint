@@ -97,7 +97,7 @@ export default function Nav() {
         <>
         <nav className="h-[60px]  bg-gray-200 w-full  backdrop-blur-md border-b border-white/20 flex items-center relative z-50">
             <p onClick={() => navigate('/first')} className="text-xl sm:text-2xl md:text-xl text-blue-500 font-bold pl-4 sm:pl-8 cursor-pointer">
-                Typelearn
+Typelearn
             </p>
 
           
