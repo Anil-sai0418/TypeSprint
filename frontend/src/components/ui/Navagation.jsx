@@ -123,7 +123,7 @@ export default function Navigation() {
             />
             <span className="hidden sm:inline text-base sm:text-lg font-bold tracking-tight">
               <span className="text-blue-500">Type</span>
-              <span className="text-green-500 ml-1">Sprint</span>
+              <span className="text-green-500 ml-1">Vex</span>
             </span>
             {/* Desktop Links */}
             <div className="hidden lg:flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium ml-4 sm:ml-10">
