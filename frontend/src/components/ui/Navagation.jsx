@@ -207,7 +207,7 @@ export default function Navigation() {
                         Share this app
                       </button>
 
-                      <button
+                      {/* <button
                         onClick={() => {
                           setUserMenuOpen(false);
                           navigate("/themes");
@@ -216,7 +216,7 @@ export default function Navigation() {
                       >
                         <Palette className="h-4 w-4" />
                         Themes
-                      </button>
+                      </button> */}
                     </div>
 
                     <div className="border-t border-border">
@@ -335,7 +335,7 @@ export default function Navigation() {
                   Share this app
                 </button>
 
-                <button
+                {/* <button
                   onClick={() => {
                     setOpen(false);
                     navigate("/themes");
@@ -344,7 +344,7 @@ export default function Navigation() {
                 >
                   <Palette className="h-4 w-4" />
                   Themes
-                </button>
+                </button> */}
 
                 <button
                   onClick={() => {
