@@ -31,10 +31,17 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/bro")
   });
 
 // Routes
+console.log('📍 Loading routes...');
 app.use("/auth", require('./routes/auth'));
+console.log('✅ /auth routes loaded');
 app.use("/profile", require('./routes/profile'));
+console.log('✅ /profile routes loaded');
 app.use("/typing-test", require('./routes/typingTest'));
+console.log('✅ /typing-test routes loaded');
+app.use("/contribution", require('./routes/contribution'));
+console.log('✅ /contribution routes loaded');
 app.use("", require('./routes/utils'));
+console.log('✅ /utils routes loaded');
 
 // Health check
 app.get("/health", (req, res) => {

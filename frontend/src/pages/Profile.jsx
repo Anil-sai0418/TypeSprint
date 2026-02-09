@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import Navigation from "../components/ui/Navagation";
 import Footer from "./Footer";
+import ContributionGraph from "../components/ContributionGraph";
 import { getFullUserProfile, updateProfileData, getUserStats, getUserActivity } from "../services/api";
 import { compressImage } from "../utils/imageCompression";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,6 @@ function Profile() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState(null);
   const [stats, setStats] = useState(null);
-  const [activityMap, setActivityMap] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [editData, setEditData] = useState({ phone: "", address: "", profileImage: "" });
@@ -81,7 +81,8 @@ function Profile() {
       console.log("Activity response:", activityRes);
       
       if (activityRes.success) {
-        setActivityMap(activityRes.activityMap);
+        // Activity data is now fetched by ContributionGraph component
+        void activityRes;
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -440,7 +441,7 @@ function Profile() {
             </Card>
           )}
 
-          {/* Activity Heatmap */}
+          {/* Activity Heatmap - Using New Production-Ready ContributionGraph */}
           <div className="rounded-xl border border-border dark:border-gray-700 bg-card dark:bg-gray-800 p-6 space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
@@ -458,18 +459,12 @@ function Profile() {
               </select>
             </div>
 
-            <p className="text-sm text-muted-foreground dark:text-gray-400">
-              Active typing days in the last year
-            </p>
-
-            {Object.keys(activityMap).length > 0 ? (
-              <ActivityHeatmap activityMap={activityMap} />
-            ) : (
-              <div className="p-12 text-center rounded-lg bg-muted/40 dark:bg-gray-700/40 border border-border dark:border-gray-700">
-                <Activity className="mx-auto mb-4 text-muted-foreground dark:text-gray-400" size={32} />
-                <p className="text-muted-foreground dark:text-gray-400">No activity yet. Complete typing tests to see your heatmap!</p>
-              </div>
-            )}
+            <ContributionGraph 
+              email={userProfile?.user?.email}
+              token={localStorage.getItem("token")}
+              isDark={true}
+              compact={false}
+            />
           </div>
 
         </div>
@@ -516,93 +511,6 @@ function SummaryCard({ title, value }) {
     <div className="p-4 rounded-lg bg-muted/40 dark:bg-gray-700/40 border border-border dark:border-gray-700">
       <p className="text-xs text-muted-foreground dark:text-gray-400">{title}</p>
       <p className="text-lg font-semibold">{value}</p>
-    </div>
-  );
-}
-
-function ActivityHeatmap({ activityMap }) {
-  // Generate 52 weeks of data (looking back from today)
-  const today = new Date();
-  const weeksData = [];
-  
-  // Go back 52 weeks and generate weeks starting from Monday
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1)); // Start from Monday of current week
-  startDate.setDate(startDate.getDate() - (52 * 7)); // Go back 52 weeks
-  
-  for (let week = 0; week < 52; week++) {
-    const weekDays = [];
-    for (let day = 0; day < 7; day++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + week * 7 + day);
-      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-      const count = activityMap[dateKey] || 0;
-      
-      weekDays.push({
-        date: dateKey,
-        count,
-        display: date
-      });
-    }
-    weeksData.push(weekDays);
-  }
-
-  // Function to get color based on activity count
-  const getActivityColor = (count) => {
-    if (count === 0) return "bg-muted/40 dark:bg-gray-700/40";
-    if (count === 1) return "bg-green-200 dark:bg-green-900/40";
-    if (count <= 3) return "bg-green-400 dark:bg-green-700/60";
-    if (count <= 5) return "bg-green-500 dark:bg-green-600";
-    return "bg-green-600 dark:bg-green-500";
-  };
-
-  // Calculate stats
-  const totalTests = Object.values(activityMap).reduce((sum, count) => sum + count, 0);
-  const activeDay = Object.keys(activityMap).length;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between text-sm text-muted-foreground dark:text-gray-400 mb-4">
-        <div>Total: <span className="font-semibold text-foreground dark:text-gray-100">{totalTests} tests</span></div>
-        <div>Active Days: <span className="font-semibold text-foreground dark:text-gray-100">{activeDay}</span></div>
-      </div>
-
-      {/* Heatmap Grid */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-2">
-          {weeksData.map((week, weekIdx) => (
-            <div key={weekIdx} className="flex flex-col gap-2">
-              {week.map((dayData, dayIdx) => {
-                const isToday = dayData.date === today.toISOString().split('T')[0];
-                const isFuture = dayData.display > today;
-                
-                return (
-                  <div
-                    key={dayIdx}
-                    className={`h-5 w-5 rounded-md ${getActivityColor(dayData.count)} ${
-                      isToday ? "ring-2 ring-blue-500/80" : ""
-                    } ${
-                      isFuture ? "opacity-50 cursor-not-allowed" : "hover:ring-2 hover:ring-green-400/40 cursor-pointer transition"
-                    }`}
-                    title={`${dayData.date}: ${dayData.count} ${dayData.count === 1 ? "test" : "tests"}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-end gap-3 text-xs text-muted-foreground dark:text-gray-400 mt-6 pt-4 border-t border-border dark:border-gray-700">
-        <span>Less</span>
-        <div className="h-5 w-5 rounded-md bg-muted/40 dark:bg-gray-700/40" title="0 tests" />
-        <div className="h-5 w-5 rounded-md bg-green-200 dark:bg-green-900/40" title="1 test" />
-        <div className="h-5 w-5 rounded-md bg-green-400 dark:bg-green-700/60" title="2-3 tests" />
-        <div className="h-5 w-5 rounded-md bg-green-500 dark:bg-green-600" title="4-5 tests" />
-        <div className="h-5 w-5 rounded-md bg-green-600 dark:bg-green-500" title="6+ tests" />
-        <span>More</span>
-      </div>
     </div>
   );
 }

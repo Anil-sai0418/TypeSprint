@@ -59,6 +59,7 @@ app.options('*', cors(corsOptions));
 app.use("/auth", require('./routes/auth'));
 app.use("/profile", require('./routes/profile'));
 app.use("/typing-test", require('./routes/typingTest'));
+app.use("/contribution", require('./routes/contribution'));
 app.use("/like", require('./routes/like'));
 app.use("", require('./routes/utils'));
 
