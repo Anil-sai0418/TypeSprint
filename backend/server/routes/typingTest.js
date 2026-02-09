@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
+const ContributionActivity = require('../models/ContributionActivity');
 const verifyToken = require('../middleware/verifyToken');
 
 const router = express.Router();
@@ -103,6 +104,25 @@ router.post("/result", verifyToken, async (req, res) => {
 
     // Save profile
     await profile.save();
+
+    // Increment contribution activity for today
+    try {
+      const { getTodayDateString } = require('../utils/dateUtils');
+      const today = getTodayDateString();
+
+      await ContributionActivity.findOneAndUpdate(
+        { userId: user._id, date: today },
+        {
+          $set: { userId: user._id, email, date: today, activityType: 'typing_test' },
+          $inc: { activityCount: 1 }
+        },
+        { upsert: true, new: true, runValidators: false }
+      );
+      console.log(`✅ Contribution activity incremented for ${email} on ${today}`);
+    } catch (contributionErr) {
+      console.error('Error updating contribution activity:', contributionErr);
+      // Don't fail the request if contribution tracking fails
+    }
 
     res.send({
       success: true,

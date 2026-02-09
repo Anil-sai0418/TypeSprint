@@ -218,3 +218,73 @@ export const getLikeCount = async () => {
   }
 };
 
+// ==================== CONTRIBUTION GRAPH ====================
+
+/**
+ * Increment activity count for today
+ * Called after user completes a typing test
+ */
+export const incrementContributionActivity = async (email, metadata = null, token = null) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}/contribution/increment`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        email,
+        metadata,
+        activityType: 'typing_test'
+      })
+    });
+    if (!response.ok) throw new Error('Failed to increment activity');
+    return await response.json();
+  } catch (error) {
+    console.error('Error incrementing contribution activity:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch activity data for the last N days (default 365)
+ */
+export const getContributionActivity = async (email, days = 365, token = null) => {
+  try {
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `${API_BASE_URL}/contribution/activity?days=${days}`,
+      { headers }
+    );
+    if (!response.ok) throw new Error('Failed to fetch contribution activity');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching contribution activity:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch contribution statistics
+ */
+export const getContributionStats = async (email, token = null) => {
+  try {
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `${API_BASE_URL}/contribution/stats`,
+      { headers }
+    );
+    if (!response.ok) throw new Error('Failed to fetch contribution stats');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching contribution stats:', error);
+    throw error;
+  }
+};
+
