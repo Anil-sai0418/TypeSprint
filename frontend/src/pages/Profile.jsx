@@ -462,7 +462,7 @@ function Profile() {
             <ContributionGraph 
               email={userProfile?.user?.email}
               token={localStorage.getItem("token")}
-              isDark={true}
+              
               compact={false}
             />
           </div>

@@ -184,7 +184,11 @@ function ContributionGraph({ email, token, isDark = false }) {
 
       {tooltip && (
         <div
-          className={`fixed z-50 px-3 py-2 rounded-md text-xs whitespace-nowrap pointer-events-none font-medium shadow-lg ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-900 text-white'}`}
+          className={`fixed z-50 px-3 py-2 rounded-md text-xs whitespace-nowrap pointer-events-none font-medium shadow-lg ${
+            isDark
+              ? 'bg-gray-900 text-gray-100'
+              : 'bg-white text-gray-900 border border-gray-200'
+          }`}
           style={{
             left: `${tooltipPos.x}px`,
             top: `${tooltipPos.y}px`,
@@ -220,7 +224,9 @@ function Cell({ day, size, isDark, onHover, onLeave }) {
         cursor: day.isFuture ? 'not-allowed' : 'pointer',
         opacity: day.isFuture ? 0.5 : 1,
         backgroundColor: getColorHex(day.activityCount, isDark),
-        boxShadow: day.isToday ? `0 0 0 2px #3b82f6` : 'none',
+        boxShadow: day.isToday
+          ? (isDark ? '0 0 0 2px #60a5fa' : '0 0 0 2px #2563eb')
+          : 'none',
         transition: 'all 0.2s'
       }}
       onMouseEnter={(e) => onHover(e, day)}
@@ -246,7 +252,9 @@ function LegendCell({ count, size, isDark }) {
 function StatItem({ label, value, isDark }) {
   const safeValue = Number.isFinite(value) ? value : 0;
   return (
-    <div className={`p-3 rounded-md ${isDark ? 'bg-gray-700' : 'bg-white border border-gray-200'}`}>
+    <div className={`p-3 rounded-md ${
+      isDark ? 'bg-gray-700' : 'bg-white border border-gray-300'
+    }`}>
       <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{label}</p>
       <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{safeValue}</p>
     </div>
@@ -254,11 +262,19 @@ function StatItem({ label, value, isDark }) {
 }
 
 function getColorHex(count, isDark) {
-  if (count === 0) return isDark ? '#374151' : '#e5e7eb';
-  if (count <= 2) return isDark ? '#22c55e' : '#86efac';
-  if (count <= 4) return isDark ? '#16a34a' : '#4ade80';
-  if (count <= 6) return isDark ? '#15803d' : '#22c55e';
-  return isDark ? '#166534' : '#16a34a';
+  if (isDark) {
+    if (count === 0) return '#374151';
+    if (count <= 2) return '#22c55e';
+    if (count <= 4) return '#16a34a';
+    if (count <= 6) return '#15803d';
+    return '#166534';
+  } else {
+    if (count === 0) return '#ebedf0';
+    if (count <= 2) return '#9be9a8';
+    if (count <= 4) return '#40c463';
+    if (count <= 6) return '#30a14e';
+    return '#216e39';
+  }
 }
 
 function getMonthLabels() {
