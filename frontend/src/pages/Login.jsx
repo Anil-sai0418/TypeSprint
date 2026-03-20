@@ -14,11 +14,12 @@ import { Label } from "../components/ui/label"
 import { useState } from "react"
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { FaGoogle, FaGithub } from "react-icons/fa";
-import { login } from "../services/api";
+import { useAuth } from "../context/useAuth";
 
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -33,8 +34,6 @@ export default function Login() {
     try {
       const data = await login(formData.email, formData.password);
       if (data.success) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userEmail", formData.email);
         alert("Login successful!");
         navigate("/home");
       } else {
@@ -42,13 +41,13 @@ export default function Login() {
       }
     } catch (err) {
       console.error("Error:", err);
-      const errorMsg = err.message.toLowerCase();
+      const errorMsg = err.message ? err.message.toLowerCase() : "unknown error";
       if (errorMsg.includes("invalid email")) {
         alert("Invalid email address. Please try again.");
       } else if (errorMsg.includes("incorrect password")) {
         alert("Incorrect password. Please try again.");
       } else {
-        alert("Login failed: " + err.message);
+        alert("Login failed: " + (err.message || "Unknown error"));
       }
     } finally {
       setIsLoading(false);
@@ -78,7 +77,7 @@ export default function Login() {
                   placeholder="you@example.com"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
               <div className="grid gap-2">
@@ -128,27 +127,7 @@ export default function Login() {
               <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full flex items-center justify-center gap-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                onClick={() => alert('Google login coming soon')}
-              >
-                <FaGoogle />
-                Continue with Google
-              </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full flex items-center justify-center gap-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                onClick={() => alert('GitHub login coming soon')}
-              >
-                <FaGithub />
-                Continue with GitHub
-              </Button>
-            </div>
             <div className="flex justify-center mt-6 text-sm text-gray-600 dark:text-gray-400">
               New here?
               <Button

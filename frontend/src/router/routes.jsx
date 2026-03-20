@@ -54,7 +54,7 @@ const routes = [
     )
   },
   {
-    path: '/Login',
+    path: '/login',
     element: (
       <PublicRoute>
         <Login />
@@ -62,7 +62,7 @@ const routes = [
     )
   },
   {
-    path: '/Register',
+    path: '/register',
     element: (
       <PublicRoute>
         <Register />
@@ -70,7 +70,7 @@ const routes = [
     )
   },
   {
-    path: '/Result',
+    path: '/result',
     element: (
       <ProtectedRoute>
         <Result />

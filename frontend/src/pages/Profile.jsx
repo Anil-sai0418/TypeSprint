@@ -43,7 +43,7 @@ function Profile() {
 
       if (!token || !email) {
         setError("Not logged in. Redirecting to login...");
-        setTimeout(() => navigate("/Login"), 1500);
+        setTimeout(() => navigate("/login"), 1500);
         return;
       }
 
@@ -144,7 +144,7 @@ function Profile() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
-    navigate("/Login");
+    navigate("/login");
   };
 
   const handleImageChange = async (e) => {
@@ -201,7 +201,7 @@ function Profile() {
             onClick={() => {
               localStorage.removeItem("token");
               localStorage.removeItem("userEmail");
-              navigate("/Login");
+              navigate("/login");
             }}
             className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition"
           >

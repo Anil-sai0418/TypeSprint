@@ -1,29 +1,79 @@
 import React from 'react';
 import { Zap, Clock, Target, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const getColorClasses = (color) => {
   const colors = {
-    green: { bg: 'bg-green-100 dark:bg-green-950', icon: 'text-green-600 dark:text-green-400', text: 'text-green-600 dark:text-green-400', border: 'hover:border-green-400 dark:hover:border-green-500' },
-    blue: { bg: 'bg-blue-100 dark:bg-blue-950', icon: 'text-blue-600 dark:text-blue-400', text: 'text-blue-600 dark:text-blue-400', border: 'hover:border-blue-400 dark:hover:border-blue-500' },
-    purple: { bg: 'bg-purple-100 dark:bg-purple-950', icon: 'text-purple-600 dark:text-purple-400', text: 'text-purple-600 dark:text-purple-400', border: 'hover:border-purple-400 dark:hover:border-purple-500' },
-    emerald: { bg: 'bg-emerald-100 dark:bg-emerald-950', icon: 'text-emerald-600 dark:text-emerald-400', text: 'text-emerald-600 dark:text-emerald-400', border: 'hover:border-emerald-400 dark:hover:border-emerald-500' }
+    indigo: { 
+      bg: 'bg-indigo-50 dark:bg-indigo-500/10', 
+      icon: 'text-indigo-600 dark:text-indigo-400', 
+      accent: 'bg-indigo-600',
+      glow: 'shadow-indigo-500/20',
+      border: 'border-indigo-100 dark:border-indigo-500/20'
+    },
+    amber: { 
+      bg: 'bg-amber-50 dark:bg-amber-500/10', 
+      icon: 'text-amber-600 dark:text-amber-400', 
+      accent: 'bg-amber-600',
+      glow: 'shadow-amber-500/20',
+      border: 'border-amber-100 dark:border-amber-500/20'
+    },
+    rose: { 
+      bg: 'bg-rose-50 dark:bg-rose-500/10', 
+      icon: 'text-rose-600 dark:text-rose-400', 
+      accent: 'bg-rose-600',
+      glow: 'shadow-rose-500/20',
+      border: 'border-rose-100 dark:border-rose-500/20'
+    },
+    emerald: { 
+      bg: 'bg-emerald-50 dark:bg-emerald-500/10', 
+      icon: 'text-emerald-600 dark:text-emerald-400', 
+      accent: 'bg-emerald-600',
+      glow: 'shadow-emerald-500/20',
+      border: 'border-emerald-100 dark:border-emerald-500/20'
+    }
   };
-  return colors[color] || colors.green;
+  return colors[color] || colors.indigo;
 };
 
-const StatCard = ({ icon: IconComponent, label, value, subValue, color }) => {
+const StatCard = ({ icon: IconComponent, label, value, subValue, color, index }) => {
   const colorClasses = getColorClasses(color);
+  
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 border-transparent ${colorClasses.border} shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-3 rounded-lg ${colorClasses.bg}`}>
-          <IconComponent className={`w-6 h-6 ${colorClasses.icon}`} />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      whileHover={{ y: -5, scale: 1.02 }}
+      className={`relative overflow-hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-6 border ${colorClasses.border} shadow-xl ${colorClasses.glow} transition-shadow duration-300`}
+    >
+      {/* Decorative background element */}
+      <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-10 ${colorClasses.accent} blur-2xl`} />
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2.5 rounded-xl ${colorClasses.bg}`}>
+            <IconComponent className={`w-5 h-5 ${colorClasses.icon}`} />
+          </div>
+          <span className="text-gray-500 dark:text-gray-400 text-xs font-bold tracking-wider uppercase">{label}</span>
         </div>
+        
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+            {value}
+          </span>
+        </div>
+        
+        {subValue && (
+          <div className="mt-3 flex items-center gap-2">
+            <div className={`w-1.5 h-1.5 rounded-full ${colorClasses.accent}`} />
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              {subValue}
+            </span>
+          </div>
+        )}
       </div>
-      <p className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">{label}</p>
-      <p className={`text-4xl md:text-5xl font-bold ${colorClasses.text}`}>{value}</p>
-      {subValue && <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">{subValue}</p>}
-    </div>
+    </motion.div>
   );
 };
 
@@ -31,41 +81,44 @@ export default function MainStatsCards({ results }) {
   const formatTime = (seconds) => {
     if (seconds < 60) return `${Math.round(seconds)}s`;
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    const remainingSeconds = Math.round(seconds % 60);
     return `${minutes}m ${remainingSeconds}s`;
   };
 
   return (
-    <div className="w-full max-w-6xl mb-8">
-      <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">Test Results</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className="w-full max-w-6xl mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={Zap}
           label="NET WPM"
-          value={results.netWpm}
-          subValue={`Raw: ${results.rawWpm}`}
-          color="green"
+          value={Math.round(results.netWpm)}
+          subValue={`Raw Speed: ${Math.round(results.rawWpm)}`}
+          color="indigo"
+          index={0}
+        />
+        <StatCard
+          icon={Target}
+          label="ACCURACY"
+          value={`${Math.round(results.accuracy)}%`}
+          subValue="Typing Precision"
+          color="amber"
+          index={1}
         />
         <StatCard
           icon={Clock}
           label="TIME"
           value={formatTime(results.totalTimeTaken)}
-          subValue={results.timeTarget ? `Target: ${results.timeTarget}s` : ""}
-          color="blue"
-        />
-        <StatCard
-          icon={Target}
-          label="ACCURACY"
-          value={`${results.accuracy}%`}
-          subValue="Precision"
-          color="purple"
+          subValue={results.timeTarget ? `Target: ${results.timeTarget}s` : "Total Duration"}
+          color="rose"
+          index={2}
         />
         <StatCard
           icon={CheckCircle2}
-          label="CORRECT"
+          label="COMPLETED"
           value={results.correctWords}
           subValue={`of ${results.totalWords} words`}
           color="emerald"
+          index={3}
         />
       </div>
     </div>

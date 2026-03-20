@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -15,7 +16,7 @@ const corsOptions = {
       'http://localhost:5174',
       'http://localhost:3000'
     ];
-    
+
     // Allow requests with no origin (mobile apps, curl requests)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -35,22 +36,24 @@ app.use(cors(corsOptions));
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // For reading cookies
 
 // Connect to MongoDB
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
   console.error('❌ MONGO_URI is missing in environment variables');
-  process.exit(1);
+  console.warn('⚠️  Running in limited mode without database features');
+} else {
+  mongoose
+    .connect(MONGO_URI)
+    .then(() => console.log('✅ MongoDB Atlas connected'))
+    .catch((err) => {
+      console.error('❌ MongoDB connection error:', err.message);
+      console.warn('⚠️  Running in limited mode without database features');
+      // Don't exit - allow server to run with limited functionality
+    });
 }
-
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB Atlas connected'))
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
-  });
 
 // Add explicit OPTIONS handler for preflight requests
 app.options('*', cors(corsOptions));

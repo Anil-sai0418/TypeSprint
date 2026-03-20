@@ -6,6 +6,7 @@ import DetailedStats from './components/DetailedStats';
 import PerformanceBreakdown from './components/PerformanceBreakdown';
 import WpmChart from './components/WpmChart';
 import ActionButtons from './components/ActionButtons';
+import { motion } from 'framer-motion';
 
 export default function Result({
   testResults = null,
@@ -25,48 +26,81 @@ export default function Result({
 
   if (!results) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 flex flex-col">
-        <Navigation />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Loading results...</p>
-          </div>
+      <div className="min-h-screen w-full bg-[#030712] flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-indigo-500 blur-[100px] opacity-20" />
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-indigo-500/20 border-t-indigo-500 mx-auto mb-6 relative z-10"></div>
+          <p className="text-gray-400 font-medium tracking-widest uppercase text-xs relative z-10 text-center">Calculating performance...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 flex flex-col">
-      <Navigation />
-      <main className="flex-1 flex flex-col items-center justify-start pt-8 md:pt-12 px-3 sm:px-4 md:px-6 pb-12">
+    <div className="min-h-screen w-full bg-[#030712] relative overflow-hidden flex flex-col font-sans selection:bg-indigo-500/30">
+      {/* Dynamic Background Elements */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Navigation />
         
-        {/* Performance Badge */}
-        <PerformanceBadge results={results} />
+        <main className="flex-1 flex flex-col items-center pt-12 px-6 pb-24 max-w-7xl mx-auto w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col items-center w-full"
+          >
+            {/* Page Header */}
+            <div className="text-center mb-12">
+              <h1 className="text-sm font-black text-indigo-500 uppercase tracking-[0.3em] mb-3">Test Results</h1>
+              <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">How did you do?</h2>
+            </div>
 
-        {/* Main Stats - High Priority */}
-        <div className="w-full max-w-6xl mb-8">
-          <WpmChart results={results} showChart={showChart} setShowChart={setShowChart} />
-        </div>
+            {/* Performance Badge */}
+            <PerformanceBadge results={results} />
 
-        {/* Stats Cards */}
-        <MainStatsCards results={results} />
+            {/* Speed Graph Section */}
+            <div className="w-full mb-12">
+              <WpmChart results={results} showChart={showChart} setShowChart={setShowChart} />
+            </div>
 
-        {/* Detailed Stats */}
-        <DetailedStats results={results} />
+            {/* Core Metrics Grid */}
+            <MainStatsCards results={results} />
 
-        {/* Performance Breakdown */}
-        <PerformanceBreakdown results={results} />
+            {/* Detailed Analytics */}
+            <DetailedStats results={results} />
 
-        {/* Action Buttons */}
-        <ActionButtons 
-          onTryAgain={onTryAgain}
-          onNewTest={onNewTest}
-          onSettings={onSettings}
-          onLeaderboard={onLeaderboard}
-        />
-      </main>
+            {/* Visual Breakdown */}
+            <div className="w-full max-w-6xl mb-16 px-1">
+              <PerformanceBreakdown results={results} />
+            </div>
+
+            {/* Next Steps / Actions */}
+            <div className="w-full max-w-6xl mb-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-800 to-transparent" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">What's Next</h3>
+                <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-800 to-transparent" />
+              </div>
+              <ActionButtons 
+                onTryAgain={onTryAgain}
+                onNewTest={onNewTest}
+                onSettings={onSettings}
+                onLeaderboard={onLeaderboard}
+              />
+            </div>
+          </motion.div>
+        </main>
+      </div>
+
+      {/* Subtle Dot Grid Overlay */}
+      <div className="fixed inset-0 z-[-1] opacity-[0.15] pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#4f46e5 0.5px, transparent 0.5px)', backgroundSize: '32px 32px' }} />
     </div>
   );
 }

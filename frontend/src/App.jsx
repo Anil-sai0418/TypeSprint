@@ -3,6 +3,7 @@ import './App.css'
 import { ThemeProvider } from './context/ThemeContext'
 import NetworkProvider from './context/NetworkContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { AuthProvider } from './context/useAuth'
 import { OfflineScreen, NetworkStatusBanner, ReconnectedToast } from './components/NetworkStatus'
 import { useNetworkStatus } from './context/useNetworkStatus'
 import routes from './router/routes'
@@ -38,11 +39,13 @@ function AppContent() {
 function App() {
   return (
     <NetworkProvider>
-      <ThemeProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </NetworkProvider>
   )
 }
