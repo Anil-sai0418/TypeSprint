@@ -206,7 +206,7 @@ export default function TypingTest() {
         try {
           if (userEmail && token) {
             const response = await fetch(
-              `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/profile/${userEmail}`,
+              `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:10000'}/profile/${userEmail}`,
               {
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -307,7 +307,7 @@ export default function TypingTest() {
   >
     <span className="
       pointer-events-none absolute inset-x-6 -top-px h-px
-      bg-gradient-to-r from-transparent via-border to-transparent
+      bg-linear-to-r from-transparent via-border to-transparent
     " />
 
     {/* Group 1: Toggles */}
@@ -381,7 +381,7 @@ export default function TypingTest() {
           {/* If a time is set, show the number, otherwise show label 'Time' */}
           <span className="tracking-wide">{settings.timeLimit ? `${settings.timeLimit}s` : "Time"}</span>
         </SelectTrigger>
-        <SelectContent align="center" className="min-w-[5rem]">
+        <SelectContent align="center" className="min-w-20">
           <SelectItem value="15">15s</SelectItem>
           <SelectItem value="30">30s</SelectItem>
           <SelectItem value="60">60s</SelectItem>
@@ -416,7 +416,7 @@ export default function TypingTest() {
             {settings.wordLimit ? `${settings.wordLimit}` : "Words"}
           </span>
         </SelectTrigger>
-        <SelectContent align="center" className="min-w-[5rem]">
+        <SelectContent align="center" className="min-w-20">
           <SelectItem value="25">25 words</SelectItem>
           <SelectItem value="50">50 words</SelectItem>
           <SelectItem value="100">100 words</SelectItem>
@@ -452,7 +452,7 @@ export default function TypingTest() {
 
           {/* Actual Text */}
           {!isLoading && (
-            <div className={`break-words select-none transition-opacity duration-200 ${!isFocused ? "blur-sm opacity-50" : "opacity-100"}`}>
+            <div className={`wrap-break-word select-none transition-opacity duration-200 ${!isFocused ? "blur-sm opacity-50" : "opacity-100"}`}>
               {words.map((char, i) => {
                 const isCurrent = i === input.length;
                 const isTyped = i < input.length;
