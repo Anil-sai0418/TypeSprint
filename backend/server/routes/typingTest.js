@@ -60,6 +60,11 @@ router.post("/result", verifyToken, async (req, res) => {
     if (!profile.bestTest || duration < profile.bestTest) {
       profile.bestTest = duration;
     }
+    
+    // Update highest accuracy
+    if (accuracy > (profile.highestAccuracy || 0)) {
+      profile.highestAccuracy = accuracy;
+    }
 
     // Update average speed
     const totalWpm = profile.typingTests.reduce((sum, test) => sum + test.wpm, 0);

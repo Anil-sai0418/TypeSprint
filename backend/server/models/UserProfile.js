@@ -32,6 +32,10 @@ const userProfileSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  highestAccuracy: {
+    type: Number,
+    default: 0
+  },
   
   // Activity tracking for heatmap (like LeetCode)
   // Structure: { "2026-01-15": 5, "2026-01-16": 3, ... }

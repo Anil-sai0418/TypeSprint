@@ -25,7 +25,7 @@ router.get("/leaderboard/global/top", async (req, res) => {
           avgWpm: profile?.averageSpeed || 0,
           totalTests: profile?.totalTests || 0,
           streak: profile?.dailyStreak || 0,
-          accuracy: profile?.bestTest ? ((profile.bestTest / 100) * 100).toFixed(2) : 0,
+          accuracy: profile?.highestAccuracy || 0,
           lastTestDate: profile?.lastTestDate || null,
           phone: profile?.phone || null,
           location: profile?.address || null
@@ -158,6 +158,7 @@ router.get("/:email/stats", verifyToken, async (req, res) => {
       success: true,
       stats: {
         highestSpeed: profile.highestSpeed || 0,
+        highestAccuracy: profile.highestAccuracy || 0,
         bestTest: profile.bestTest || 0,
         totalTests: profile.totalTests || 0,
         averageSpeed: profile.averageSpeed || 0,

@@ -130,6 +130,9 @@ const useTypingEngine = (settings) => {
         accuracy: 100,
         correctChars: 0,
         incorrectChars: 0,
+        correctWords: 0,
+        incorrectWords: 0,
+        totalWords: 0,
         errors: 0,
         timeElapsed: 0,
         timeLeft: settings.timeLimit || null
@@ -137,9 +140,9 @@ const useTypingEngine = (settings) => {
     }
 
     const currentTime = status === "completed" ? endTime : Date.now();
-    const timeElapsed = Math.max(1, (currentTime - startTime) / 1000); // OPTIMIZATION: Prevent division by zero
+    const timeElapsed = Math.max(1, (currentTime - startTime) / 1000); 
 
-    // OPTIMIZATION: Use cached stats + filter only once
+    // Character stats
     const totalTyped = keystrokesRef.current.filter(k => !k.isBackspace).length;
     const correctCount = statsRef.current.totalCorrect;
     const errorCount = statsRef.current.totalError;
@@ -148,17 +151,42 @@ const useTypingEngine = (settings) => {
     const rawWpm = Math.round(((totalTyped / 5) / (timeElapsed / 60)));
     const netWpm = Math.round(rawWpm * (accuracy / 100));
 
+    // Word stats (Monkeytype logic: word is correct if ALL chars in it match)
+    const originalText = words.join("");
+    const typedText = input;
+    
+    const originalWords = originalText.split(" ");
+    const typedWords = typedText.trim().split(/\s+/);
+    
+    let correctWords = 0;
+    let incorrectWords = 0;
+    
+    // We only evaluate words the user has actually finished (space pressed or end of text)
+    // If the test ended via time limit, the last word might be partial
+    typedWords.forEach((typedWord, idx) => {
+      if (idx < originalWords.length) {
+        if (typedWord === originalWords[idx]) {
+          correctWords++;
+        } else {
+          incorrectWords++;
+        }
+      }
+    });
+
     return {
       netWpm,
       rawWpm,
       accuracy,
       correctChars: correctCount,
       incorrectChars: totalTyped - correctCount,
+      correctWords,
+      incorrectWords,
+      totalWords: originalWords.length,
       errors: errorCount,
-      timeElapsed: Math.round(timeElapsed),
+      totalTimeTaken: Math.round(timeElapsed),
       timeLeft: settings.timeLimit ? Math.max(0, Math.round(settings.timeLimit - timeElapsed)) : null
     };
-  }, [startTime, endTime, status, settings.timeLimit]); // OPTIMIZATION: Minimal dependencies
+  }, [startTime, endTime, status, settings.timeLimit, words, input]); 
 
   return {
     status,
@@ -269,7 +297,7 @@ export default function TypingTest() {
       <Result 
         testResults={{
           ...stats,
-          totalWords: words.length,
+          timeTarget: settings.timeLimit,
           wpmHistory
         }}
         onTryAgain={restart}

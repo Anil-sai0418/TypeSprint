@@ -11,9 +11,15 @@ export const AuthProvider = ({ children }) => {
     const fetchUser = async (email, token) => {
         try {
             const userData = await getFullUserProfile(email, token);
-            if (userData) {
-                // Handle structure differences if specific user object exists or is top-level
-                setUser(userData.user || userData);
+            if (userData && userData.success) {
+                // Merge core user data with profile data (which contains profileImage)
+                const mergedUser = {
+                    ...userData.user,
+                    ...(userData.profile || {}),
+                    // Ensure the name stays consistent if profile has a different name field or none
+                    name: userData.user.name || (userData.profile && userData.profile.name) || email.split('@')[0]
+                };
+                setUser(mergedUser);
             } else {
                 setUser({ email, name: email.split('@')[0] });
             }

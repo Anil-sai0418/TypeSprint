@@ -72,8 +72,33 @@ export default function Navigation() {
               <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">Loading...</div>
             ) : (
               <div className="relative hidden sm:block">
-                <button ref={buttonRef} aria-haspopup="menu" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(!userMenuOpen)} className="p-2 rounded-full hover:bg-muted focus:outline-none focus:ring-2 focus:ring-green-500 transition">
-                  {user?.avatar ? <img src={user.avatar} alt="Profile" className="h-8 w-8 rounded-full object-cover" /> : <UserCircle className="h-6 w-6 text-muted-foreground" />}
+                <button 
+                  ref={buttonRef} 
+                  aria-haspopup="menu" 
+                  aria-expanded={userMenuOpen} 
+                  onClick={() => setUserMenuOpen(!userMenuOpen)} 
+                  className="p-1 rounded-xl transition-all duration-300 group
+                             bg-gray-100 dark:bg-zinc-900/50 
+                             hover:bg-gray-200 dark:hover:bg-zinc-800 
+                             border border-gray-200 dark:border-zinc-700/50
+                             focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                >
+                  <div className="h-9 w-9 rounded-lg overflow-hidden flex items-center justify-center bg-muted/30">
+                    {user?.profileImage ? (
+                      <img 
+                        src={user.profileImage} 
+                        alt="Profile" 
+                        className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500" 
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                    ) : null}
+                    <UserCircle 
+                      className={`h-6 w-6 text-muted-foreground transition-transform group-active:scale-90 ${user?.profileImage ? 'hidden' : 'block'}`} 
+                    />
+                  </div>
                 </button>
                 {userMenuOpen && (
                   <div ref={menuRef} className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl border border-border bg-background shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
