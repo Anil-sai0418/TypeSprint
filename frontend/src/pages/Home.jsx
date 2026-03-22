@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { RotateCcw, Type, Clock, Hash, AlignLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import Navigation from "@/components/ui/Navagation";
+import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
 import Result from "./Result";
 import { fetchRandomText } from "../services/api";

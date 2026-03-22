@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navigation from "../components/ui/Navagation";
+import Navigation from "../components/ui/Navigation";
 import Footer from "./Footer";
 import PerformanceBadge from './result/components/PerformanceBadge';
 import MainStatsCards from './result/components/MainStatsCards';

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap, Trophy, ChevronRight, Activity, Terminal, Star } from 'lucide-react';
-import Navigation from '../components/ui/Navagation'; // Keeping your import
+import Navigation from '../components/ui/Navigation'; // Keeping your import
 import Footer from './Footer';
 
 const TypeSprintHome = () => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navigation from "../../components/ui/Navagation";
+import Navigation from "../../components/ui/Navigation";
 import PerformanceBadge from './components/PerformanceBadge';
 import MainStatsCards from './components/MainStatsCards';
 import DetailedStats from './components/DetailedStats';

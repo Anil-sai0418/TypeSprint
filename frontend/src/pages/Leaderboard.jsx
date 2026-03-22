@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import Navigation from "@/components/ui/Navagation";
+import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
 import { getLeaderboard } from "../services/api";
 import { Zap, TrendingUp, Flame, Target, ChevronLeft, ChevronRight, Search } from "lucide-react";

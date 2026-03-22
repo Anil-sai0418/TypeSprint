@@ -14,7 +14,7 @@ import {
   X
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import Navigation from "../components/ui/Navagation";
+import Navigation from "../components/ui/Navigation";
 import Footer from "./Footer";
 import ContributionGraph from "../components/ContributionGraph";
 import { getFullUserProfile, updateProfileData, getUserStats, getUserActivity } from "../services/api";

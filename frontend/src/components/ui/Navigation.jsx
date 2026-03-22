@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import BreadcrumbNav from "../BreadcrumbNav";
-import Notification from "../notification/notification";
+import Notification from "../notification/Notification";
 import ShareModal from "../share/Share";
 
 export default function Navigation() {
