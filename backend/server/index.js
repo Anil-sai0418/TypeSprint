@@ -1,7 +1,13 @@
 require("dotenv").config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const sequelize = require('./config/database');
+
+// Import models to ensure they are registered with Sequelize
+require('./models/User');
+require('./models/UserProfile');
+require('./models/ContributionActivity');
+require('./models/ApplicationLike');
 
 const app = express();
 
@@ -21,13 +27,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/bro")
+// Sync Sequelize Models with Database
+sequelize.sync({ alter: true }) // Using alter to update schema automatically without dropping existing data
   .then(() => {
-    console.log("✅ Database connected successfully");
+    console.log("✅ PostgreSQL Database connected & synchronized successfully");
   })
   .catch((err) => {
-    console.error("❌ Database connection error:", err);
+    console.error("❌ SQL Database sync error:", err);
   });
 
 // Routes
@@ -44,8 +50,13 @@ app.use("", require('./routes/utils'));
 console.log('✅ /utils routes loaded');
 
 // Health check
-app.get("/health", (req, res) => {
-  res.send({ success: true, message: "Server is running" });
+app.get("/health", async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.send({ success: true, message: "Server is running", database: "connected" });
+  } catch (err) {
+    res.status(500).send({ success: false, message: "Database connection failed" });
+  }
 });
 
 // Error handling middleware

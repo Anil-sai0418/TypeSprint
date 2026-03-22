@@ -1,70 +1,64 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const User = require('./User');
 
-/**
- * ContributionActivity Schema
- * Tracks user activity on a per-day basis for the contribution graph
- * Uses date-based indexing for efficient queries
- */
-const contributionActivitySchema = new mongoose.Schema({
+const ContributionActivity = sequelize.define('ContributionActivity', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
-    required: true
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: User,
+      key: 'id'
+    }
   },
   email: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  // Date in YYYY-MM-DD format (stored as string for easy query and grouping)
   date: {
-    type: String,
-    required: true,
-    index: true
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-  // Count of activities on this date
   activityCount: {
-    type: Number,
-    default: 0,
-    min: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
-  // Activity type (e.g., 'typing_test', 'practice', etc.)
   activityType: {
-    type: String,
-    enum: ['typing_test', 'practice', 'challenge'],
-    default: 'typing_test'
+    type: DataTypes.STRING,
+    defaultValue: 'typing_test',
   },
-  // Timezone of the user for accurate date recording
   timezone: {
-    type: String,
-    default: 'UTC'
+    type: DataTypes.STRING,
+    defaultValue: 'UTC',
   },
-  // Metadata for activity (e.g., WPM, accuracy)
   metadata: {
-    wpm: Number,
-    accuracy: Number,
-    duration: Number
+    type: DataTypes.JSON, // { wpm, accuracy, duration }
   },
-  // Timestamps
   createdAt: {
-    type: Date,
-    default: () => new Date(),
-    index: true
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
   },
   updatedAt: {
-    type: Date,
-    default: () => new Date()
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
   }
-}, { 
+}, {
   timestamps: false,
-  collection: 'contribution_activities'
+  tableName: 'contribution_activities',
+  indexes: [
+    { fields: ['userId', 'date'] },
+    { fields: ['email', 'date'] },
+    { fields: ['date'] },
+  ]
 });
 
-// Compound index for efficient queries: (userId, date) and (email, date)
-contributionActivitySchema.index({ userId: 1, date: -1 });
-contributionActivitySchema.index({ email: 1, date: -1 });
+// Associations
+User.hasMany(ContributionActivity, { foreignKey: 'userId', as: 'activities' });
+ContributionActivity.belongsTo(User, { foreignKey: 'userId' });
 
-// Index for date range queries
-contributionActivitySchema.index({ date: -1 });
-
-module.exports = mongoose.model('ContributionActivity', contributionActivitySchema);
+module.exports = ContributionActivity;

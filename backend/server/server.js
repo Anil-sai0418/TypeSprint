@@ -1,15 +1,35 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+
+const sequelize = require('./config/database');
+
+// Initialize models
+require('./models/User');
+require('./models/UserProfile');
+require('./models/ContributionActivity');
+require('./models/ApplicationLike');
 
 const app = express();
 
+// Trust proxy is required when deploying to platforms like Render or Heroku behind load balancers.
+app.set('trust proxy', 1);
+
+// Rate Limiter configuration to prevent DDoS and brute-force attacks
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  message: { success: false, message: "Too many requests from this IP, please try again later." },
+});
+
 // Security and Performance Middleware
+// Apply rate limiter globally
+app.use(limiter);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false, // Disable for easier frontend integration if needed
@@ -56,29 +76,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Connect to MongoDB with Production Settings
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  console.error('❌ CRITICAL: MONGO_URI is missing in environment variables');
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(1); // Exit in production if DB is missing
-  }
-} else {
-  mongoose
-    .connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    })
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
-    .catch((err) => {
-      console.error('❌ MongoDB Atlas connection error:', err.message);
-      if (process.env.NODE_ENV === 'production') {
-        console.error('Shutting down server due to DB connection failure...');
-        process.exit(1);
-      }
-    });
-}
+// Connect to PostgreSQL with Sequelize Sync
+// In production, altering tables automatically can be dangerous, so we conditionally enable it
+const syncOptions = process.env.NODE_ENV === 'production' ? {} : { alter: true };
+sequelize.sync(syncOptions)
+  .then(() => console.log('✅ PostgreSQL Database connected & synchronized successfully'))
+  .catch((err) => {
+    console.error('❌ SQL Database sync error:', err.message);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Shutting down server due to DB connection failure...');
+      process.exit(1);
+    }
+  });
 
 // Routes
 app.use("/auth", require('./routes/auth'));
@@ -88,13 +97,19 @@ app.use("/contribution", require('./routes/contribution'));
 app.use("/like", require('./routes/like'));
 app.use("", require('./routes/utils'));
 
-// Health Check Endpoint (Best practice for Render/Vercel)
-app.get("/health", (req, res) => {
+// Health Check Endpoint
+app.get("/health", async (req, res) => {
+  let dbStatus = 'disconnected';
+  try {
+    await sequelize.authenticate();
+    dbStatus = 'connected';
+  } catch (err) {}
+
   res.status(200).json({ 
     status: 'up', 
     timestamp: new Date(),
     environment: process.env.NODE_ENV || 'development',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: dbStatus
   });
 });
 
@@ -118,14 +133,14 @@ const server = app.listen(PORT, () => {
   console.log(`📦 Node Version: ${process.version}`);
 });
 
-// Graceful Shutdown - Best Practice for Render
+// Graceful Shutdown
 process.on('SIGTERM', () => {
   console.info('SIGTERM signal received.');
   console.log('Closing HTTP server.');
   server.close(() => {
     console.log('HTTP server closed.');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed.');
+    sequelize.close().then(() => {
+      console.log('Sequelize connection closed.');
       process.exit(0);
     });
   });

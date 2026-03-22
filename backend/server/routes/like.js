@@ -11,23 +11,23 @@ router.get("/status", async (req, res) => {
     const email = req.query.email;
     const token = req.headers.authorization?.split(' ')[1];
 
-    let appLike = await ApplicationLike.findOne({});
+    let appLike = await ApplicationLike.findOne();
     
     if (!appLike) {
-      appLike = new ApplicationLike({
+      appLike = await ApplicationLike.create({
         totalLikes: 0,
         likes: []
       });
-      await appLike.save();
     }
 
     let userLiked = false;
     
     if (email && token) {
       try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ where: { email } });
         if (user) {
-          userLiked = appLike.likes.some(like => like.userId.toString() === user._id.toString());
+          const likesArray = appLike.likes || [];
+          userLiked = likesArray.some(like => like.userId === user.id);
         }
       } catch (error) {
         console.log("Token verification for like status skipped");
@@ -50,39 +50,42 @@ router.post("/toggle", verifyToken, async (req, res) => {
     const { email } = req.body;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Find or create application like document
-    let appLike = await ApplicationLike.findOne({});
+    let appLike = await ApplicationLike.findOne();
     
     if (!appLike) {
-      appLike = new ApplicationLike({
+      appLike = await ApplicationLike.create({
         totalLikes: 0,
         likes: []
       });
     }
 
     // Check if user already liked
-    const existingLikeIndex = appLike.likes.findIndex(
-      like => like.userId.toString() === user._id.toString()
+    const likesArray = Array.isArray(appLike.likes) ? [...appLike.likes] : [];
+    const existingLikeIndex = likesArray.findIndex(
+      like => like.userId === user.id
     );
 
     if (existingLikeIndex > -1) {
       // User already liked, remove the like
-      appLike.likes.splice(existingLikeIndex, 1);
+      likesArray.splice(existingLikeIndex, 1);
       appLike.totalLikes = Math.max(0, appLike.totalLikes - 1);
     } else {
       // Add new like
-      appLike.likes.push({
-        userId: user._id,
+      likesArray.push({
+        userId: user.id,
         likedAt: new Date()
       });
       appLike.totalLikes += 1;
     }
 
+    appLike.likes = likesArray;
+    appLike.changed('likes', true);
     appLike.lastUpdated = new Date();
     await appLike.save();
 
@@ -100,14 +103,13 @@ router.post("/toggle", verifyToken, async (req, res) => {
 // GET /like/count - Get total likes count (public endpoint)
 router.get("/count", async (req, res) => {
   try {
-    let appLike = await ApplicationLike.findOne({});
+    let appLike = await ApplicationLike.findOne();
     
     if (!appLike) {
-      appLike = new ApplicationLike({
+      appLike = await ApplicationLike.create({
         totalLikes: 0,
         likes: []
       });
-      await appLike.save();
     }
 
     res.send({

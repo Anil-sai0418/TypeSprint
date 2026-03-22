@@ -16,7 +16,7 @@ router.post("/register", async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).send({ success: false, message: "Email already exists" });
     }
@@ -26,26 +26,23 @@ router.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const newUser = new User({
+    const savedUser = await User.create({
       name,
       email,
       password: hashedPassword
     });
 
-    const savedUser = await newUser.save();
-
     // Create user profile
-    const userProfile = new UserProfile({
-      userId: savedUser._id,
+    await UserProfile.create({
+      userId: savedUser.id,
       achievements: ["First Test"]
     });
-    await userProfile.save();
 
     res.send({
       success: true,
       message: "Registration successful",
       user: {
-        id: savedUser._id,
+        id: savedUser.id,
         name: savedUser.name,
         email: savedUser.email
       }
@@ -65,7 +62,7 @@ router.post("/login", async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
@@ -78,7 +75,7 @@ router.post("/login", async (req, res) => {
 
     // Generate token
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production_at_least_32_characters_long',
       { expiresIn: '7d' }
     );
@@ -88,7 +85,7 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email
       }

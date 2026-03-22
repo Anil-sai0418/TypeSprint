@@ -1,27 +1,30 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const User = require('./User'); // Assuming reference to User
 
-const likeSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
-    required: true
+const ApplicationLike = sequelize.define('ApplicationLike', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
   },
-  likedAt: {
-    type: Date,
-    default: Date.now
-  }
-}, { _id: false });
-
-const applicationLikeSchema = new mongoose.Schema({
   totalLikes: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
-  likes: [likeSchema],
+  // We can store likes array as JSON or a separate table.
+  // Given it's a simple array inside document, JSON is fine for SQLite
+  likes: {
+    type: DataTypes.JSON, 
+    defaultValue: [], // Array of objects { userId, likedAt }
+  },
   lastUpdated: {
-    type: Date,
-    default: Date.now
-  }
-}, { timestamps: true });
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  timestamps: true,
+  tableName: 'applicationLikes',
+});
 
-module.exports = mongoose.model("applicationLikes", applicationLikeSchema);
+module.exports = ApplicationLike;

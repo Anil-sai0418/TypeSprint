@@ -16,16 +16,16 @@ router.post("/result", verifyToken, async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Get or create profile
-    let profile = await UserProfile.findOne({ userId: user._id });
+    let profile = await UserProfile.findOne({ where: { userId: user.id } });
     if (!profile) {
-      profile = new UserProfile({
-        userId: user._id,
+      profile = await UserProfile.create({
+        userId: user.id,
         achievements: ["First Test"],
         highestSpeed: 0,
         averageSpeed: 0,
@@ -33,19 +33,24 @@ router.post("/result", verifyToken, async (req, res) => {
         dailyStreak: 0,
         bestTest: 0,
         typingTests: [],
-        activityMap: new Map()
+        activityMap: {}
       });
     }
 
     // Add test to history
     const testDate = new Date();
-    profile.typingTests.push({
+    
+    // Explicitly copy for JSON tracking in Sequelize
+    const currentTests = Array.isArray(profile.typingTests) ? [...profile.typingTests] : [];
+    currentTests.push({
       date: testDate,
       wpm: Math.round(wpm),
       accuracy: Math.round(accuracy),
       duration: duration,
       raw: raw || Math.round(wpm)
     });
+    profile.typingTests = currentTests;
+    profile.changed('typingTests', true);
 
     // Update statistics
     profile.totalTests = (profile.totalTests || 0) + 1;
@@ -67,13 +72,17 @@ router.post("/result", verifyToken, async (req, res) => {
     }
 
     // Update average speed
-    const totalWpm = profile.typingTests.reduce((sum, test) => sum + test.wpm, 0);
-    profile.averageSpeed = Math.round(totalWpm / profile.typingTests.length);
+    const totalWpm = currentTests.reduce((sum, test) => sum + test.wpm, 0);
+    profile.averageSpeed = Math.round(totalWpm / currentTests.length);
 
     // Update activity map (LeetCode style heatmap)
     const dateKey = testDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-    const currentActivity = profile.activityMap.get(dateKey) || 0;
-    profile.activityMap.set(dateKey, currentActivity + 1);
+    
+    const currentActivityMap = typeof profile.activityMap === 'object' && profile.activityMap !== null ? { ...profile.activityMap } : {};
+    const currentActivity = currentActivityMap[dateKey] || 0;
+    currentActivityMap[dateKey] = currentActivity + 1;
+    profile.activityMap = currentActivityMap;
+    profile.changed('activityMap', true);
 
     // Update daily streak
     const today = new Date();
@@ -84,27 +93,49 @@ router.post("/result", verifyToken, async (req, res) => {
     const todayKey = today.toISOString().split('T')[0];
     const yesterdayKey = yesterday.toISOString().split('T')[0];
 
-    if (profile.activityMap.has(todayKey)) {
+    if (currentActivityMap[todayKey]) {
       // User tested today, maintain or increment streak
-      if (profile.activityMap.has(yesterdayKey)) {
-        profile.dailyStreak = (profile.dailyStreak || 1) + 1;
-      } else {
-        profile.dailyStreak = 1;
+      if (currentActivityMap[yesterdayKey]) {
+        // Only increment if they didn't just test earlier today for the first time
+        // Actually, previous logic incremented it. Let's just keep the streak logic simple
+        // If they played yesterday, streak continues or increments.
+        // Wait, if they ALREADY played today, streak shouldn't increment twice today.
+        // The original buggy logic:
+        profile.dailyStreak = (profile.dailyStreak || 1); // Keep it same unless we verify yesterday
+        // Better logic: we should only increment streak if this is the FIRST test of the today and they played yesterday
+        if (currentActivityMap[todayKey] === 1 && currentActivityMap[yesterdayKey]) {
+           profile.dailyStreak = (profile.dailyStreak || 0) + 1;
+        } else if (currentActivityMap[todayKey] === 1 && !currentActivityMap[yesterdayKey]) {
+           // First test today and no test yesterday = streak resets to 1
+           profile.dailyStreak = 1;
+        }
       }
     }
 
     // Check achievements
-    if (profile.highestSpeed >= 100 && !profile.achievements.includes("100 WPM Club")) {
-      profile.achievements.push("100 WPM Club");
+    const currentAchievements = Array.isArray(profile.achievements) ? [...profile.achievements] : ["First Test"];
+    let achChanged = false;
+    
+    if (profile.highestSpeed >= 100 && !currentAchievements.includes("100 WPM Club")) {
+      currentAchievements.push("100 WPM Club");
+      achChanged = true;
     }
-    if (profile.highestSpeed >= 150 && !profile.achievements.includes("150 WPM Club")) {
-      profile.achievements.push("150 WPM Club");
+    if (profile.highestSpeed >= 150 && !currentAchievements.includes("150 WPM Club")) {
+      currentAchievements.push("150 WPM Club");
+      achChanged = true;
     }
-    if (profile.dailyStreak >= 7 && !profile.achievements.includes("7-Day Streak")) {
-      profile.achievements.push("7-Day Streak");
+    if (profile.dailyStreak >= 7 && !currentAchievements.includes("7-Day Streak")) {
+      currentAchievements.push("7-Day Streak");
+      achChanged = true;
     }
-    if (profile.totalTests >= 10 && !profile.achievements.includes("Speed Improver")) {
-      profile.achievements.push("Speed Improver");
+    if (profile.totalTests >= 10 && !currentAchievements.includes("Speed Improver")) {
+      currentAchievements.push("Speed Improver");
+      achChanged = true;
+    }
+    
+    if (achChanged) {
+      profile.achievements = currentAchievements;
+      profile.changed('achievements', true);
     }
 
     // Save profile
@@ -113,17 +144,20 @@ router.post("/result", verifyToken, async (req, res) => {
     // Increment contribution activity for today
     try {
       const { getTodayDateString } = require('../utils/dateUtils');
-      const today = getTodayDateString();
+      const todayStr = getTodayDateString();
 
-      await ContributionActivity.findOneAndUpdate(
-        { userId: user._id, date: today },
-        {
-          $set: { userId: user._id, email, date: today, activityType: 'typing_test' },
-          $inc: { activityCount: 1 }
-        },
-        { upsert: true, new: true, runValidators: false }
-      );
-      console.log(`✅ Contribution activity incremented for ${email} on ${today}`);
+      const [contribution] = await ContributionActivity.findOrCreate({
+        where: { userId: user.id, date: todayStr },
+        defaults: {
+          email,
+          activityType: 'typing_test',
+          activityCount: 0
+        }
+      });
+      contribution.activityCount += 1;
+      await contribution.save();
+      
+      console.log(`✅ Contribution activity incremented for ${email} on ${todayStr}`);
     } catch (contributionErr) {
       console.error('Error updating contribution activity:', contributionErr);
       // Don't fail the request if contribution tracking fails
@@ -152,13 +186,13 @@ router.get("/stats/:email", verifyToken, async (req, res) => {
     const { email } = req.params;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Get profile
-    const profile = await UserProfile.findOne({ userId: user._id });
+    const profile = await UserProfile.findOne({ where: { userId: user.id } });
     if (!profile) {
       return res.send({
         success: true,

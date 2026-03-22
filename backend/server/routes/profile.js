@@ -10,14 +10,14 @@ router.get("/leaderboard/global/top", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
 
-    // Get all users with their profiles, sort by highestSpeed
-    const users = await User.find().select('name email createdAt');
+    // Get all users
+    const users = await User.findAll({ attributes: ['id', 'name', 'email', 'createdAt'] });
     
-    const leaderboardData = await Promise.all(
+    let leaderboardData = await Promise.all(
       users.map(async (user) => {
-        const profile = await UserProfile.findOne({ userId: user._id });
+        const profile = await UserProfile.findOne({ where: { userId: user.id } });
         return {
-          userId: user._id,
+          userId: user.id,
           name: user.name,
           email: user.email,
           profileImage: profile?.profileImage || null,
@@ -69,19 +69,18 @@ router.get("/:email", verifyToken, async (req, res) => {
     const { email } = req.params;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Find or create profile
-    let profile = await UserProfile.findOne({ userId: user._id });
+    let profile = await UserProfile.findOne({ where: { userId: user.id } });
     if (!profile) {
-      profile = new UserProfile({
-        userId: user._id,
+      profile = await UserProfile.create({
+        userId: user.id,
         achievements: ["First Test"]
       });
-      await profile.save();
     }
 
     res.send({
@@ -105,17 +104,23 @@ router.put("/:email", verifyToken, async (req, res) => {
     const { phone, address, profileImage } = req.body;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
-    // Update profile
-    const profile = await UserProfile.findOneAndUpdate(
-      { userId: user._id },
-      { phone, address, profileImage },
-      { new: true, upsert: true }
-    );
+    // Update or create profile
+    let profile = await UserProfile.findOne({ where: { userId: user.id } });
+    if (profile) {
+      await profile.update({ phone, address, profileImage });
+    } else {
+      profile = await UserProfile.create({
+        userId: user.id,
+        phone,
+        address,
+        profileImage
+      });
+    }
 
     res.send({
       success: true,
@@ -133,13 +138,13 @@ router.get("/:email/stats", verifyToken, async (req, res) => {
     const { email } = req.params;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Get profile
-    const profile = await UserProfile.findOne({ userId: user._id });
+    const profile = await UserProfile.findOne({ where: { userId: user.id } });
     if (!profile) {
       return res.send({
         success: true,
@@ -178,13 +183,13 @@ router.get("/:email/activity", verifyToken, async (req, res) => {
     const { email } = req.params;
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Get profile with activity
-    const profile = await UserProfile.findOne({ userId: user._id });
+    const profile = await UserProfile.findOne({ where: { userId: user.id } });
     if (!profile) {
       return res.send({
         success: true,
@@ -192,12 +197,9 @@ router.get("/:email/activity", verifyToken, async (req, res) => {
       });
     }
 
-    // Convert Map to object for JSON response
-    const activityObject = Object.fromEntries(profile.activityMap || new Map());
-
     res.send({
       success: true,
-      activityMap: activityObject
+      activityMap: profile.activityMap || {}
     });
   } catch (err) {
     res.status(500).send({ success: false, message: "Server error", error: err.message });

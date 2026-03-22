@@ -1,71 +1,80 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const User = require('./User');
 
-const userProfileSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
-    required: true,
-    unique: true
+const UserProfile = sequelize.define('UserProfile', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
   },
-  phone: String,
-  address: String,
-  profileImage: String,
-  
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    unique: true,
+    references: {
+      model: User,
+      key: 'id',
+    },
+  },
+  phone: {
+    type: DataTypes.STRING,
+  },
+  address: {
+    type: DataTypes.STRING,
+  },
+  profileImage: {
+    type: DataTypes.TEXT,
+  },
   // Typing Statistics
   highestSpeed: {
-    type: Number,
-    default: 0
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
   },
   bestTest: {
-    type: Number,
-    default: 0
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
   },
   totalTests: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   dailyStreak: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   averageSpeed: {
-    type: Number,
-    default: 0
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
   },
   highestAccuracy: {
-    type: Number,
-    default: 0
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
   },
-  
-  // Activity tracking for heatmap (like LeetCode)
-  // Structure: { "2026-01-15": 5, "2026-01-16": 3, ... }
-  // where key is date in YYYY-MM-DD format and value is number of tests
+  // Activity map
   activityMap: {
-    type: Map,
-    of: Number,
-    default: new Map()
+    type: DataTypes.JSON, // Maps string to number
+    defaultValue: {},
   },
-  
   // Typing tests history
-  typingTests: [
-    {
-      date: {
-        type: Date,
-        default: Date.now
-      },
-      wpm: Number,
-      accuracy: Number,
-      duration: Number,
-      raw: Number
-    }
-  ],
-  
-  achievements: {
-    type: [String],
-    default: ["First Test"]
+  typingTests: {
+    type: DataTypes.JSON, // Array of objects
+    defaultValue: [],
   },
-  
-  lastTestDate: Date
-}, { timestamps: true });
+  achievements: {
+    type: DataTypes.JSON, // Array of strings
+    defaultValue: ["First Test"],
+  },
+  lastTestDate: {
+    type: DataTypes.DATE,
+  },
+}, {
+  timestamps: true,
+  tableName: 'userProfiles',
+});
 
-module.exports = mongoose.model("userProfiles", userProfileSchema);
+// Associations
+User.hasOne(UserProfile, { foreignKey: 'userId', as: 'profile' });
+UserProfile.belongsTo(User, { foreignKey: 'userId' });
+
+module.exports = UserProfile;
