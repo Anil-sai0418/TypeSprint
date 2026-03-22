@@ -15,6 +15,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "https://type-sprint-mauve.vercel.app",
     "https://typevex.vercel.app",
     "https://157.50.99.17",
     "http://157.50.99.17",

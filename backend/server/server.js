@@ -39,9 +39,10 @@ app.use(morgan('combined')); // Production logging
 
 // CORS Configuration - Professional Setup
 const allowedOrigins = [
+  'https://type-sprint-mauve.vercel.app', // Latest Vercel URL
   'https://type-sprint-psi.vercel.app',
   'https://typevex-1.onrender.com', // Render URL
-  process.env.FRONTEND_URL, // Dynamic frontend URL from env
+  process.env.FRONTEND_URL || process.env.CLIENT_URL, // Dynamic frontend URL from env
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000'
