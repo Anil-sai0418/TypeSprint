@@ -7,8 +7,12 @@ const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URI || "postgres
 
 const dialectOptions = {};
 
-// Use SSL in production unless explicitly disabled, which Render often requires for external DB connections.
-if (process.env.NODE_ENV === 'production' && process.env.DB_SSL !== 'false') {
+// Use SSL in production only if explicitly requested OR if the URL is an external Render URL.
+// Render internal URLs (dpg-xyz) do NOT support SSL.
+const isRenderExternal = DB_URL.includes('render.com');
+const forceSsl = process.env.DB_SSL === 'true' || (process.env.NODE_ENV === 'production' && isRenderExternal && process.env.DB_SSL !== 'false');
+
+if (forceSsl) {
   dialectOptions.ssl = {
     require: true,
     rejectUnauthorized: false

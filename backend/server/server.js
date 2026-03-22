@@ -82,7 +82,7 @@ const syncOptions = process.env.NODE_ENV === 'production' ? {} : { alter: true }
 sequelize.sync(syncOptions)
   .then(() => console.log('✅ PostgreSQL Database connected & synchronized successfully'))
   .catch((err) => {
-    console.error('❌ SQL Database sync error:', err.message);
+    console.error('❌ SQL Database sync error:', err);
     if (process.env.NODE_ENV === 'production') {
       console.error('Shutting down server due to DB connection failure...');
       process.exit(1);
