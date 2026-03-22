@@ -234,7 +234,7 @@ export default function TypingTest() {
         try {
           if (userEmail && token) {
             const response = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:10000'}/profile/${userEmail}`,
+              `${import.meta.env.VITE_API_BASE_URL || 'https://typesprint-1.onrender.com'}/profile/${userEmail}`,
               {
                 headers: {
                   'Authorization': `Bearer ${token}`,

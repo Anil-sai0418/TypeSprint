@@ -7,7 +7,7 @@
  * - Request timeout management
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://typevex-1.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://typesprint-1.onrender.com';
 
 // Store for pending requests that need retry
 const pendingRequests = new Map();
