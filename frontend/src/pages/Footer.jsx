@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getLikeStatus, toggleLike, getLikeCount } from '../services/api';
 
 function Footer({ isLoggedIn = false }) {
@@ -160,12 +161,12 @@ function Footer({ isLoggedIn = false }) {
           <div className="md:ml-20">
             <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500   uppercase mb-6">SITEMAP</h3>
             <ul className="space-y-3 text-sm font-medium">
-              <li><a href="#" className="hover:text-zinc-400 transition-colors">Home</a></li>
-              <li><a href="#" className="hover:text-zinc-400 transition-colors">Pricing</a></li>
+              <li><Link to="/" className="hover:text-zinc-400 transition-colors">Home</Link></li>
+              <li><Link to="/home" className="hover:text-zinc-400 transition-colors">Type</Link></li>
               <li>
-                <a href="#" className="hover:text-zinc-400 transition-colors flex items-start">
-                  Resources <span className="text-[0.6rem] ml-1 relative -top-1 text-zinc-500 dark:text-zinc-400">74</span>
-                </a>
+                <Link to="/leaderboard" className="hover:text-zinc-400 transition-colors flex items-start">
+                  Leaderboard
+                </Link>
               </li>
               {!isLoggedIn && (
                 <>
@@ -212,56 +213,67 @@ function Footer({ isLoggedIn = false }) {
   </h3>
 
   <div
-    className="relative overflow-hidden w-full max-w-xs rounded-xl
+    className="relative group overflow-hidden w-full max-w-xs rounded-xl
     bg-linear-to-b from-zinc-100 to-white dark:from-zinc-900 dark:to-black
     border border-zinc-200 dark:border-zinc-800
     p-5 space-y-5 shadow-lg
     transition-all duration-300
+    hover:border-zinc-300 dark:hover:border-zinc-700
     hover:shadow-xl hover:-translate-y-0.5
     after:absolute after:inset-0 after:content-['']
-    after:bg-linear-to-r after:from-transparent after:via-white/40 after:to-transparent
+    after:bg-linear-to-r after:from-transparent after:via-white/80 after:to-transparent
     dark:after:via-white/10
     after:translate-x-[-120%] hover:after:translate-x-[120%]
     after:transition-transform after:duration-700"
   >
     
     {/* Connection Status */}
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-zinc-500 dark:text-zinc-400">Connection</span>
+    <div className="flex items-center justify-between text-sm p-2.5 -mx-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-xl transition-all duration-300 group/connection">
+      <span className="text-zinc-500 dark:text-zinc-400 group-hover/connection:text-zinc-900 dark:group-hover/connection:text-zinc-100 transition-colors">Connection</span>
       <span
-        className={`relative group flex items-center gap-2 font-semibold ${
+        className={`relative flex items-center gap-2 font-semibold transition-all duration-300 ${
           connectionStatus === "online"
-            ? "text-emerald-400"
+            ? "text-emerald-500"
             : connectionStatus === "slow"
-            ? "text-yellow-400"
-            : "text-red-400"
+            ? "text-yellow-500"
+            : "text-red-500"
         }`}
       >
-        <span
-          className={`w-2 h-2 rounded-full ${
-            connectionStatus === "online"
-              ? "bg-emerald-400"
-              : connectionStatus === "slow"
-              ? "bg-yellow-400"
-              : "bg-red-400"
-          }`}
-        ></span>
+        <span className="relative flex h-2 w-2">
+          {connectionStatus === "online" && (
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          )}
+          <span
+            className={`relative inline-flex rounded-full h-2 w-2 ${
+              connectionStatus === "online"
+                ? "bg-emerald-500"
+                : connectionStatus === "slow"
+                ? "bg-yellow-500"
+                : "bg-red-500"
+            }`}
+          ></span>
+        </span>
         {connectionStatus === "online"
           ? "Online"
           : connectionStatus === "slow"
           ? "Slow Network"
           : "Offline"}
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
-                   hidden group-hover:block
-                   whitespace-nowrap rounded-md bg-white dark:bg-zinc-900
-                   border border-zinc-200 dark:border-zinc-700
-                   px-2 py-1 text-[0.65rem] text-zinc-500 dark:text-zinc-400 shadow-lg">
-          Network: {networkInfo.type}
-          {networkInfo.downlink && (
-            <span className="ml-1 text-zinc-500 dark:text-zinc-400">
-              • {networkInfo.downlink} Mbps
-            </span>
-          )}
+        
+        {/* Tooltip */}
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 
+                   opacity-0 scale-95 group-hover/connection:opacity-100 group-hover/connection:scale-100
+                   pointer-events-none transition-all duration-300
+                   whitespace-nowrap rounded-lg bg-zinc-900 text-white
+                   px-3 py-1.5 text-[0.65rem] shadow-xl z-20">
+          <span className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${connectionStatus === "online" ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "bg-zinc-500"}`}></span>
+            {networkInfo.type.toUpperCase()} • {networkInfo.downlink || '??'} Mbps
+          </span>
+          {/* Triangle arrow */}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 
+                     border-l-[6px] border-l-transparent 
+                     border-r-[6px] border-r-transparent 
+                     border-t-[6px] border-t-zinc-900"></span>
         </span>
       </span>
     </div>
