@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import BreadcrumbNav from "../BreadcrumbNav";
 import Notification from "../notification/Notification";
+import { AnimatePresence, motion } from "framer-motion";
 import ShareModal from "../share/Share";
 
 export default function Navigation() {
@@ -185,7 +186,14 @@ export default function Navigation() {
       </nav>
 
       <BreadcrumbNav />
-      <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} />
+      <AnimatePresence>
+        {shareModalOpen && (
+          <ShareModal
+            isOpen={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
