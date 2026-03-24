@@ -184,11 +184,10 @@ function ContributionGraph({ email, token, isDark = false }) {
 
       {tooltip && (
         <div
-          className={`fixed z-50 px-3 py-2 rounded-md text-xs whitespace-nowrap pointer-events-none font-medium shadow-lg ${
-            isDark
+          className={`fixed z-50 px-3 py-2 rounded-md text-xs whitespace-nowrap pointer-events-none font-medium shadow-lg ${isDark
               ? 'bg-gray-900 text-gray-100'
               : 'bg-white text-gray-900 border border-gray-200'
-          }`}
+            }`}
           style={{
             left: `${tooltipPos.x}px`,
             top: `${tooltipPos.y}px`,
@@ -252,9 +251,8 @@ function LegendCell({ count, size, isDark }) {
 function StatItem({ label, value, isDark }) {
   const safeValue = Number.isFinite(value) ? value : 0;
   return (
-    <div className={`p-3 rounded-md ${
-      isDark ? 'bg-gray-700' : 'bg-white border border-gray-300'
-    }`}>
+    <div className={`p-3 rounded-md ${isDark ? 'bg-gray-700' : 'bg-white border border-gray-300'
+      }`}>
       <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{label}</p>
       <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{safeValue}</p>
     </div>

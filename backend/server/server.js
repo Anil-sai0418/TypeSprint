@@ -20,10 +20,42 @@ const app = express();
 // Trust proxy is required when deploying to platforms like Render or Heroku behind load balancers.
 app.set('trust proxy', 1);
 
+// CORS Configuration - Professional Setup
+const allowedOrigins = [
+  'https://type-sprint-mauve.vercel.app',
+  'https://type-sprint-psi.vercel.app',
+  'https://typevex-1.onrender.com',
+  process.env.FRONTEND_URL || process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      console.warn(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Set-Cookie'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 // Rate Limiter configuration to prevent DDoS and brute-force attacks
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Generous limit for development
   message: { success: false, message: "Too many requests from this IP, please try again later." },
 });
 
@@ -37,40 +69,6 @@ app.use(helmet({
 app.use(compression()); // Compress all responses
 app.use(morgan('combined')); // Production logging
 
-// CORS Configuration - Professional Setup
-const allowedOrigins = [
-  'https://type-sprint-mauve.vercel.app', // Latest Vercel URL
-  'https://type-sprint-psi.vercel.app',
-  'https://typevex-1.onrender.com', // Render URL
-  process.env.FRONTEND_URL || process.env.CLIENT_URL, // Dynamic frontend URL from env
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000'
-].filter(Boolean); // Remove null/undefined
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin is allowed or in development
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      console.warn(`Blocked by CORS: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Set-Cookie'], // Important for cookies
-  optionsSuccessStatus: 200,
-  maxAge: 86400 // Cache preflight for 24h
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Pre-flight
 
 // Standard Middleware
 app.use(express.json({ limit: '10mb' }));
