@@ -132,6 +132,19 @@ router.post("/result", verifyToken, async (req, res) => {
       currentAchievements.push("Speed Improver");
       achChanged = true;
     }
+    if (profile.totalTests >= 100 && !currentAchievements.includes("Marathon")) {
+      currentAchievements.push("Marathon");
+      achChanged = true;
+    }
+    // Check accuracy from request body for "Accuracy Master"
+    if (accuracy >= 100 && !currentAchievements.includes("Accuracy Master")) {
+      currentAchievements.push("Accuracy Master");
+      achChanged = true;
+    }
+    if (profile.totalTests >= 1 && !currentAchievements.includes("First Test")) {
+      currentAchievements.push("First Test");
+      achChanged = true;
+    }
     
     if (achChanged) {
       profile.achievements = currentAchievements;

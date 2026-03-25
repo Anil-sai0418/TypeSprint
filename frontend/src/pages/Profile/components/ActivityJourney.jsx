@@ -8,7 +8,7 @@ const ActivityJourney = ({ email, theme }) => {
     <Card className="border-border shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-bold flex items-center gap-2">
-          <Activity size={20} className="text-primary" />
+
           Your Journey
         </CardTitle>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground">

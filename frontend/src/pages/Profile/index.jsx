@@ -95,7 +95,7 @@ function Profile() {
               handleLogout={handleLogout}
               handleImageChange={handleImageChange}
             />
-            <AchievementsCard />
+            <AchievementsCard achievements={profile?.achievements || []} />
           </div>
 
           {/* Right Column: Stats, Edit Form, Activity */}
