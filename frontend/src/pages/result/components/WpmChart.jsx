@@ -1,41 +1,69 @@
-import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useMemo } from 'react';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot 
+} from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/button';
 import { BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTheme } from '../../../context/useTheme';
 
 export default function WpmChart({ results, showChart, setShowChart }) {
-  if (!results?.wpmHistory?.length) {
+  const { theme } = useTheme();
+  
+  const data = useMemo(() => results?.wpmHistory || [], [results]);
+
+  // Calculate max WPM for dynamic Y-axis with breathing room
+  const maxVal = useMemo(() => {
+    if (!data || data.length === 0) return 100;
+    return Math.max(...data.map(d => Math.max(d.wpm || 0, d.raw || 0))) + 10;
+  }, [data]);
+
+  const yDomainMax = Math.ceil(maxVal / 10) * 10;
+  const gradientId = "wpmGradientResult";
+
+  if (!data.length) {
     return null;
   }
 
-  // Custom tool tip component for a more premium look
+
+  // Custom tool tip component
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-2">Progress at {label}s</p>
+        <div className="bg-white/95 dark:bg-black/95 backdrop-blur-md p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-xl min-w-[140px]">
+          <p className="text-[10px] font-bold text-zinc-400 mb-2 uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800 pb-1">
+            Progress at {label}s
+          </p>
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-8">
-              <span className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                WPM
-              </span>
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                {Math.round(payload[0].value)}
-              </span>
-            </div>
-            {payload[1] && (
-              <div className="flex items-center justify-between gap-8">
-                <span className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                  <div className="w-2 h-2 rounded-full bg-gray-400" />
-                  Raw
-                </span>
-                <span className="text-sm font-bold text-gray-500">
-                  {Math.round(payload[1].value)}
-                </span>
-              </div>
-            )}
+            {payload.map((entry, index) => {
+              if (
+                (entry.dataKey === 'errors' || entry.dataKey === 'hasError') && 
+                !entry.value
+              ) return null;
+              
+              const name = entry.name === 'wpm' ? 'Net WPM' : 
+                           entry.name === 'raw' ? 'Raw Speed' : 'Errors';
+              
+              const color = entry.dataKey === 'wpm' ? '#8b5cf6' : 
+                            entry.dataKey === 'raw' ? '#9ca3af' : '#ef4444';
+
+              return (
+                <div key={index} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-1.5 h-1.5 rounded-full ring-2 ring-opacity-20 ring-current" 
+                      style={{ backgroundColor: color, color: color }}
+                    />
+                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                      {name}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold font-mono" style={{ color: color }}>
+                    {Math.round(entry.value)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -45,25 +73,26 @@ export default function WpmChart({ results, showChart, setShowChart }) {
 
   return (
     <div className="w-full mb-12">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner">
-            <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 shadow-sm">
+            <BarChart3 className="w-5 h-5 text-violet-600 dark:text-violet-400" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Speed Curve</h2>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Your typing momentum visualized</p>
+            <h2 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Speed Curve</h2>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Your typing momentum visualized</p>
           </div>
         </div>
         <Button
           onClick={() => setShowChart(!showChart)}
           variant="outline"
-          className="rounded-xl border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 font-bold text-xs uppercase tracking-wider"
+          size="sm"
+          className="rounded-lg border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all font-semibold text-[10px] uppercase tracking-wider h-8"
         >
           {showChart ? (
-            <span className="flex items-center gap-2">Hide Trend <ChevronUp className="w-4 h-4" /></span>
+            <span className="flex items-center gap-1.5">Hide <ChevronUp className="w-3 h-3" /></span>
           ) : (
-            <span className="flex items-center gap-2">Show Trend <ChevronDown className="w-4 h-4" /></span>
+            <span className="flex items-center gap-1.5">Show <ChevronDown className="w-3 h-3" /></span>
           )}
         </Button>
       </div>
@@ -74,117 +103,111 @@ export default function WpmChart({ results, showChart, setShowChart }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="bg-white/50 dark:bg-gray-900/40 backdrop-blur-sm rounded-4xl p-6 md:p-10 border border-gray-200 dark:border-gray-800 shadow-2xl">
-              <div className="h-[400px] w-full">
+            <div className="bg-white dark:bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-6 border border-zinc-200 dark:border-zinc-800/60 shadow-sm">
+              <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart 
-                    data={results.wpmHistory}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    data={data}
+                    margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
                   >
                     <defs>
-                      <linearGradient id="colorWpm" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorRaw" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
+                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#e2e8f0"
-                      className="dark:stroke-gray-800"
-                    />
-                    <XAxis
-                      dataKey="time"
-                      type="number"
-                      domain={['auto', 'auto']}
-                      tickFormatter={(value) => `${value}s`}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }}
-                      dy={10}
-                    />
-                    <YAxis
-                      domain={[0, (dataMax) => Math.ceil(dataMax + 10)]}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }}
-                    />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                     
-                    {/* Error markers */}
-                    <Area 
-                      type="step"
-                      dataKey="hasError"
-                      stroke="none"
-                      fill="none"
-                      dot={(props) => {
-                        const { cx, payload } = props;
-                        if (payload?.hasError) {
-                          return (
-                            <motion.circle
-                              initial={{ r: 0 }}
-                              animate={{ r: 4 }}
-                              cx={cx}
-                              cy={20}
-                              fill="#f43f5e"
-                              className="drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]"
-                            />
-                          );
-                        }
-                        return null;
-                      }}
-                      isAnimationActive={true}
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      vertical={false} 
+                      stroke={theme === 'dark' ? '#27272a' : '#f4f4f5'} 
                     />
-
-                    {/* Raw WPM - subtle dashed line */}
+                    
+                    <XAxis 
+                      dataKey="time" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#a1a1aa', fontSize: 11, fontWeight: 500 }}
+                      tickMargin={15}
+                      tickFormatter={(value) => `${value}s`}
+                    />
+                    
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#a1a1aa', fontSize: 11, fontWeight: 500 }}
+                      domain={[0, yDomainMax]}
+                      tickCount={6}
+                    />
+                    
+                    <Tooltip 
+                      content={<CustomTooltip />} 
+                      cursor={{ stroke: '#8b5cf6', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+                      animationDuration={200}
+                    />
+                    
+                    {/* Raw Speed (Dashed Line) */}
                     <Area
                       type="monotone"
                       dataKey="raw"
-                      stroke="#94a3b8"
+                      name="raw"
+                      stroke="#9ca3af"
                       strokeWidth={2}
-                      strokeDasharray="5 5"
-                      fillOpacity={1}
-                      fill="url(#colorRaw)"
+                      strokeDasharray="6 6"
+                      fill="none"
                       isAnimationActive={true}
-                      animationDuration={1500}
+                      activeDot={{ r: 4, strokeWidth: 0, fill: '#9ca3af' }}
                     />
 
-                    {/* Main WPM Line */}
+                    {/* Net WPM (Solid Line with Gradient) */}
                     <Area
                       type="monotone"
                       dataKey="wpm"
-                      stroke="#6366f1"
-                      strokeWidth={4}
-                      fillOpacity={1}
-                      fill="url(#colorWpm)"
+                      name="wpm"
+                      stroke="#8b5cf6"
+                      strokeWidth={3}
+                      fill={`url(#${gradientId})`}
                       isAnimationActive={true}
-                      animationDuration={1000}
-                      className="drop-shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                      activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#8b5cf6' }}
                     />
+                    
+                    {/* Error Markers using ReferenceDot is tricky inside AreaChart over map, 
+                        so we use a scatter/dot approach or ReferenceDot loop */}
+                    {data.map((entry, index) => (
+                        (entry.errors > 0 || entry.hasError) ? (
+                           <ReferenceDot 
+                              key={`error-${index}`}
+                              x={entry.time} 
+                              y={entry.wpm} 
+                              r={3} 
+                              fill="#ef4444" 
+                              stroke="none"
+                              isFront={true}
+                           />
+                        ) : null
+                     ))}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Enhanced Legend */}
-              <div className="flex justify-center gap-10 mt-10 pt-8 border-t border-gray-100 dark:border-gray-800/60 flex-wrap">
-                <div className="flex items-center gap-3 group">
-                  <div className="w-10 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
-                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Net WPM</span>
+              <div className="flex justify-center items-center gap-8 mt-6 pt-6 border-t border-dashed border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2 group cursor-default">
+                    <div className="w-8 h-1 rounded-full bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,0.5)] transition-shadow"></div>
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider group-hover:text-violet-500 transition-colors">Net WPM</span>
                 </div>
-                <div className="flex items-center gap-3 opacity-60">
-                  <div className="w-10 h-1.5 rounded-full border border-dashed border-slate-500 bg-transparent" />
-                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Raw Speed</span>
+                <div className="flex items-center gap-2 group cursor-default">
+                    <div className="w-8 h-1 relative overflow-hidden">
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 border-t-2 border-dashed border-gray-400"></div>
+                    </div>
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider group-hover:text-gray-400 transition-colors">Raw Speed</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Errors</span>
+                <div className="flex items-center gap-2 group cursor-default">
+                    <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider group-hover:text-red-500 transition-colors">Errors</span>
                 </div>
               </div>
             </div>

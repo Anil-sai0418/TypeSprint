@@ -40,9 +40,9 @@ export default function ActionButtons({ onTryAgain, onNewTest }) {
 
 const ActionButton = ({ icon: IconComp, label, description, onClick, color, index }) => {
   const colors = {
-    indigo: "group-hover:text-indigo-400 group-hover:bg-indigo-500/10 border-indigo-500/10",
-    purple: "group-hover:text-purple-400 group-hover:bg-purple-500/10 border-purple-500/10",
-    amber: "group-hover:text-amber-400 group-hover:bg-amber-500/10 border-amber-500/10"
+    indigo: "group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:bg-indigo-500/10 dark:group-hover:bg-indigo-500/10 border-indigo-500/10",
+    purple: "group-hover:text-purple-500 dark:group-hover:text-purple-400 group-hover:bg-purple-500/10 dark:group-hover:bg-purple-500/10 border-purple-500/10",
+    amber: "group-hover:text-amber-500 dark:group-hover:text-amber-400 group-hover:bg-amber-500/10 dark:group-hover:bg-amber-500/10 border-amber-500/10"
   };
 
   return (
@@ -53,23 +53,23 @@ const ActionButton = ({ icon: IconComp, label, description, onClick, color, inde
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="group relative flex items-center gap-5 rounded-4xl px-8 py-6 bg-white/3 hover:bg-white/6 backdrop-blur-xl border border-white/10 transition-all duration-300 text-left w-full sm:w-auto min-w-[280px]"
+      className="group relative flex items-center gap-5 rounded-3xl px-6 py-5 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 transition-all duration-300 shadow-sm text-left w-full sm:w-auto min-w-65"
     >
-      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-gray-400 transition-all duration-300 ${colors[color]}`}>
-        <IconComp className="h-6 w-6" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 transition-all duration-300">
+        <IconComp className={`h-6 w-6 transition-colors duration-300 ${colors[color].split(" ")[0]}`} />
       </div>
 
       <div className="flex-1">
-        <p className="text-lg font-bold text-white tracking-tight">
+        <p className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
           {label}
         </p>
-        <p className="text-sm font-medium text-gray-500">
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
           {description}
         </p>
       </div>
 
       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </div>
