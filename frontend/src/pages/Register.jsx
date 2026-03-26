@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from "../components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -12,6 +12,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { register } from "../services/api";
+import { motion } from "framer-motion";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -35,7 +36,6 @@ export default function Register() {
     try {
       const data = await register(formData.name, formData.email, formData.password);
       if (data.success) {
-        alert("Registration successful!");
         navigate("/login");
       } else {
         alert(`Registration failed: ${data.message}`);
@@ -49,105 +49,138 @@ export default function Register() {
   }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#0a0a0a] flex justify-center items-center">
-      {/* --- Premium Typing Background Element --- */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none select-none overflow-hidden font-mono text-[10px] leading-none text-blue-500/40">
-        <div className="animate-pulse flex flex-wrap gap-2 p-4">
-          {Array.from({ length: 1000 }).map((_, i) => (
-            <span key={i} className="transition-opacity duration-1000">
-              {["function", "const", "let", "=>", "{", "}", "import", "type", "true", "false", "return"][i % 11]}
-            </span>
-          ))}
-        </div>
-      </div>
+    <div className="relative min-h-screen w-full overflow-hidden bg-zinc-50 dark:bg-black selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 flex items-center justify-center p-4">
       
-      {/* Floating Ambient Glow */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Background Decor */}
+      <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden flex items-center justify-center">
+         <span className="text-[20vw] font-black text-zinc-200/50 dark:text-zinc-900/50 leading-none tracking-tighter opacity-50 blur-sm">
+            JOIN
+         </span>
+         <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-500/10 rounded-full blur-[120px]" />
+         <div className="absolute bottom-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+      </div>
 
-      {/* --- Main Content --- */}
-      <Card className="relative z-10 w-full max-w-sm rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800 shadow-2xl">
-        <CardHeader className="text-center pb-2">
-          <CardTitle className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Create account
-          </CardTitle>
-
-          <CardDescription className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            Join <span className="font-medium text-blue-500">Monkey Type</span> and start improving
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <Card className="border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-900 dark:via-zinc-100 to-transparent opacity-20" />
+          
+          <CardHeader className="space-y-1 text-center pb-8 pt-10">
+             <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mx-auto w-12 h-12 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center mb-4 shadow-lg -rotate-3"
+            >
+              <span className="text-2xl">🚀</span>
+            </motion.div>
+            <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              Create an account
+            </CardTitle>
+            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-sm">
+              Enter your information to get started with Monkey Type
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider ml-1">
+                  Name
+                </Label>
                 <Input
                   id="name"
                   name="name"
-                  className="bg-gray-50/50 dark:bg-gray-950/50 border-gray-200 dark:border-gray-800 focus:ring-blue-500"
-                  placeholder="Enter your name"
+                  placeholder="John Doe"
                   required
                   value={formData.name}
                   onChange={handleChange}
+                  className="h-11 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-900 dark:focus:ring-zinc-100 rounded-xl transition-all"
+                  disabled={isLoading}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider ml-1">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   name="email"
-                  className="bg-gray-50/50 dark:bg-gray-950/50 border-gray-200 dark:border-gray-800 focus:ring-blue-500"
-                  placeholder="you@example.com"
+                  type="email"
+                  placeholder="name@example.com"
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  className="h-11 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-900 dark:focus:ring-zinc-100 rounded-xl transition-all"
+                  disabled={isLoading}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider ml-1">
+                  Password
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    className="bg-gray-50/50 dark:bg-gray-950/50 border-gray-200 dark:border-gray-800 focus:ring-blue-500"
-                    placeholder="••••••••"
+                    placeholder="Create a password"
                     required
                     value={formData.password}
                     onChange={handleChange}
+                    className="h-11 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-900 dark:focus:ring-zinc-100 rounded-xl pr-10 transition-all"
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 transition"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1"
+                    disabled={isLoading}
                   >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="mt-6">
-              <Button
-                type="submit"
-                className="w-full rounded-xl bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all duration-300 active:scale-95"
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium transition-all shadow-lg shadow-zinc-900/10 dark:shadow-zinc-100/10 active:scale-[0.98]"
                 disabled={isLoading}
               >
-                {isLoading ? "Processing..." : "Register"}
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Create Account <ArrowRight className="w-4 h-4" />
+                  </span>
+                )}
               </Button>
+            </form>
+            
+            <div className="mt-8 text-center text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400">
+                Already have an account?{' '}
+              </span>
+              <Link 
+                to="/login" 
+                className="font-semibold text-zinc-900 dark:text-white hover:underline decoration-2 underline-offset-4"
+              >
+                Sign In
+              </Link>
             </div>
-          </form>
-          <div className="flex justify-center mt-6 text-sm text-gray-500">
-            Already have an account?{" "}
-            <Button
-              variant="link"
-              className="p-0 ml-1 h-auto font-semibold text-blue-500 hover:text-blue-400"
-              onClick={() => navigate("/login")}
-            >
-              Login
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

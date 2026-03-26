@@ -25,6 +25,7 @@ const allowedOrigins = [
   'https://type-sprint-mauve.vercel.app',
   'https://type-sprint-psi.vercel.app',
   'https://typevex-1.onrender.com',
+  'https://typevex.vercel.app',
   process.env.FRONTEND_URL || process.env.CLIENT_URL,
   'http://localhost:5173',
   'http://localhost:5174',

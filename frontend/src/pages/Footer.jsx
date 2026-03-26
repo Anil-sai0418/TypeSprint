@@ -123,11 +123,11 @@ function Footer({ isLoggedIn = false }) {
   return (
     <footer className="relative bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white overflow-hidden font-sans mt-auto border-t border-zinc-200 dark:border-zinc-800">
       {/* Background "Type" Layer */}
-      <div className="absolute inset-0 z-0 flex items-end justify-center pointer-events-none select-none overflow-hidden opacity-30 dark:opacity-10">
-        <span className="text-[12rem] sm:text-[16rem] md:text-[24rem] font-bold text-zinc-200 dark:text-zinc-800 leading-none tracking-tighter translate-y-1/4">
+      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+        <span className="text-[15rem] sm:text-[20rem] md:text-[30rem] font-black text-zinc-100 dark:text-[#18181b] leading-none tracking-tighter opacity-100 dark:opacity-100 translate-y-[5%]">
           Type
         </span>
-        <span className="absolute bottom-0 right-0 text-[10rem] sm:text-[16rem] md:text-[36rem] font-bold text-zinc-200 dark:text-zinc-800/50 leading-none translate-y-1/4 translate-x-1/4">
+        <span className="absolute bottom-0 right-0 text-[10rem] sm:text-[16rem] md:text-[30rem] font-bold text-zinc-100 dark:text-[#18181b] leading-none translate-y-[5%] translate-x-1/4 opacity-100 dark:opacity-100">
           *
         </span>
       </div>

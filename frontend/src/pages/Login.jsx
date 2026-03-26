@@ -1,21 +1,18 @@
 import { Button } from "../components/ui/button"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "../components/ui/card"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { useState } from "react"
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { FaGoogle, FaGithub } from "react-icons/fa";
+import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from "../context/useAuth";
-
+import { motion } from "framer-motion";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -34,7 +31,6 @@ export default function Login() {
     try {
       const data = await login(formData.email, formData.password);
       if (data.success) {
-        alert("Login successful!");
         navigate("/home");
       } else {
         alert("Login failed: " + data.message);
@@ -55,92 +51,122 @@ export default function Login() {
   }
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex justify-center items-center">
-      <Card className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/60 dark:border-gray-800 shadow-xl">
-        <CardHeader className="text-center pb-2">
-          <CardTitle className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Welcome back
-          </CardTitle>
+    <div className="relative min-h-screen w-full overflow-hidden bg-zinc-50 dark:bg-black selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 flex items-center justify-center p-4">
+      
+      {/* Background Decor */}
+      <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden flex items-center justify-center">
+         <span className="text-[20vw] font-black text-zinc-200/50 dark:text-zinc-900/50 leading-none tracking-tighter opacity-50 blur-sm">
+            LOGIN
+         </span>
+         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px]" />
+      </div>
 
-          <CardDescription className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            Sign in to continue to <span className="font-medium text-gray-900 dark:text-gray-200">Monkey Type</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <Card className="border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-900 dark:via-zinc-100 to-transparent opacity-20" />
+          
+          <CardHeader className="space-y-1 text-center pb-8 pt-10">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mx-auto w-12 h-12 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center mb-4 shadow-lg rotate-3"
+            >
+              <span className="text-2xl">⌨️</span>
+            </motion.div>
+            <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              Welcome back
+            </CardTitle>
+            <CardDescription className="text-zinc-500 dark:text-zinc-400 text-sm">
+              Enter your credentials to continue your journey
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider ml-1">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="name@example.com"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="h-11 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-900 dark:focus:ring-zinc-100 rounded-xl transition-all"
+                  disabled={isLoading}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider ml-1">
+                    Password
+                  </Label>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="••••••••"
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="h-11 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-900 dark:focus:ring-zinc-100 rounded-xl pr-10 transition-all"
+                    disabled={isLoading}
                   />
-
                   <button
                     type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition"
-                    aria-label="Toggle password visibility"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors p-1"
+                    disabled={isLoading}
                   >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
-            </div>
-            <CardFooter className="flex-col gap-2 mt-4">
-              <Button
-                type="submit"
-                className="w-full mt-4 rounded-xl 
-                bg-blue-600 text-white 
-                hover:bg-blue-500 
-                dark:bg-blue-500 dark:hover:bg-blue-400 
-                shadow-md dark:shadow-blue-500/30 
-                transition-all duration-200"
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl font-medium transition-all shadow-lg shadow-zinc-900/10 dark:shadow-zinc-100/10 active:scale-[0.98]"
                 disabled={isLoading}
               >
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Sign In <ArrowRight className="w-4 h-4" />
+                  </span>
+                )}
               </Button>
-            </CardFooter>
-
-            <div className="my-4 flex items-center gap-3">
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                or
+            </form>
+            
+            <div className="mt-8 text-center text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400">
+                Don't have an account?{' '}
               </span>
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-            </div>
-
-
-            <div className="flex justify-center mt-6 text-sm text-gray-600 dark:text-gray-400">
-              New here?
-              <Button
-                variant="link"
-                className="p-0 ml-1 h-auto font-semibold text-primary hover:underline underline-offset-4 transition"
-                onClick={() => navigate("/register")}
+              <Link 
+                to="/register" 
+                className="font-semibold text-zinc-900 dark:text-white hover:underline decoration-2 underline-offset-4"
               >
-                Create an account
-              </Button>
+                Create one
+              </Link>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }

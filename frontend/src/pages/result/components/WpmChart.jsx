@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/button';
@@ -24,6 +24,19 @@ export default function WpmChart({ results, showChart, setShowChart }) {
   if (!data.length) {
     return null;
   }
+
+  const CustomizedDot = (props) => {
+    const { cx, cy, payload } = props;
+    if (payload.errors > 0 || payload.hasError) {
+      return (
+        <g>
+          <circle cx={cx} cy={cy} r={8} fill="#ef4444" fillOpacity={0.3} />
+          <circle cx={cx} cy={cy} r={4} fill="#ef4444" stroke="#fff" strokeWidth={2} />
+        </g>
+      );
+    }
+    return null;
+  };
 
 
   // Custom tool tip component
@@ -172,23 +185,8 @@ export default function WpmChart({ results, showChart, setShowChart }) {
                       fill={`url(#${gradientId})`}
                       isAnimationActive={true}
                       activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#8b5cf6' }}
+                      dot={<CustomizedDot />}
                     />
-                    
-                    {/* Error Markers using ReferenceDot is tricky inside AreaChart over map, 
-                        so we use a scatter/dot approach or ReferenceDot loop */}
-                    {data.map((entry, index) => (
-                        (entry.errors > 0 || entry.hasError) ? (
-                           <ReferenceDot 
-                              key={`error-${index}`}
-                              x={entry.time} 
-                              y={entry.wpm} 
-                              r={3} 
-                              fill="#ef4444" 
-                              stroke="none"
-                              isFront={true}
-                           />
-                        ) : null
-                     ))}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
