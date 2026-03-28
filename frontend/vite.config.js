@@ -32,24 +32,33 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@tanstack/react-query')) {
-              return 'vendor-query';
-            }
-            if (id.includes('three')) {
-              return 'vendor-three';
-            }
-            if (id.includes('chart.js') || id.includes('react-chartjs-2') || id.includes('recharts')) {
-              return 'vendor-charts';
-            }
-            if (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('framer-motion')) {
-              return 'vendor-ui';
-            }
-            return 'vendor'; // all other node_modules
-          }
+          if (!id.includes('node_modules')) return;
+
+          const parts = id.split('node_modules/')[1];
+          if (!parts) return 'vendor';
+
+          const pkg = parts.startsWith('@')
+            ? parts.split('/').slice(0, 2).join('/')
+            : parts.split('/')[0];
+
+          const reactPackages = new Set([
+            'react',
+            'react-dom',
+            'react-router-dom',
+            'react-icons',
+            'react-easy-crop',
+            'react-chartjs-2',
+            'recharts',
+            '@tanstack/react-query',
+            'lucide-react',
+            'framer-motion'
+          ]);
+
+          if (reactPackages.has(pkg) || pkg.startsWith('@radix-ui')) return 'vendor-react';
+          if (pkg === 'three') return 'vendor-three';
+          if (pkg === 'chart.js') return 'vendor-charts';
+
+          return;
         }
       }
     },
