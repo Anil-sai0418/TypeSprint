@@ -8,6 +8,7 @@ import { OfflineScreen, NetworkStatusBanner, ReconnectedToast } from './componen
 import { useNetworkStatus } from './context/useNetworkStatus'
 import routes from './router/routes'
 import NotificationTracker from './components/notification/NotificationTracker'
+import SEO from './components/SEO'
 
 function AppContent() {
   const { isConnected } = useNetworkStatus();
@@ -26,6 +27,7 @@ function AppContent() {
       {/* App content */}
       {isConnected && (
         <BrowserRouter>
+          <SEO />
           <NotificationTracker />
           <Routes>
             {routes.map((route, index) => (

@@ -2,8 +2,11 @@ User-agent: *
 Allow: /
 
 # Block sensitive or private pages
-Disallow: /Login/
-Disallow: /login/
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /result
+Disallow: /notifications
 
 # Host-specific sitemap
-Sitemap: https://task-manager-anil.vercel.app/sitemap.xml
+Sitemap: https://typevex.vercel.app/sitemap.xml
