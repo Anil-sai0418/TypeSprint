@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useQuery } from '@tanstack/react-query'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { RotateCcw } from "lucide-react"
 
 const WORD_SETS = {
@@ -313,18 +314,18 @@ export default function TypingTest() {
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header Skeleton */}
           <div className="text-center space-y-3 flex flex-col items-center">
-            <div className="h-9 w-48 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-5 w-64 bg-gray-200 rounded animate-pulse"></div>
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-5 w-64" />
           </div>
 
           {/* Settings Skeleton */}
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-wrap gap-4 items-center justify-center">
-                <div className="h-9 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-9 w-40 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-9 w-24 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-9 w-24 bg-gray-200 rounded animate-pulse ml-auto"></div>
+                <Skeleton className="h-9 w-32" />
+                <Skeleton className="h-9 w-40" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24 ml-auto" />
               </div>
             </CardContent>
           </Card>
@@ -332,16 +333,16 @@ export default function TypingTest() {
           {/* Stats Skeleton */}
           <div className="flex justify-center gap-6">
             <div className="text-center flex flex-col items-center space-y-2">
-              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-4 w-10 bg-gray-200 rounded animate-pulse"></div>
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-4 w-10" />
             </div>
             <div className="text-center flex flex-col items-center space-y-2">
-              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-4 w-16" />
             </div>
             <div className="text-center flex flex-col items-center space-y-2">
-              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-4 w-10 bg-gray-200 rounded animate-pulse"></div>
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-4 w-10" />
             </div>
           </div>
 
@@ -349,12 +350,12 @@ export default function TypingTest() {
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div className="min-h-[120px] max-w-full p-4 bg-gray-100 rounded-lg animate-pulse flex flex-wrap gap-2 content-start">
+                <div className="min-h-30 max-w-full p-4 rounded-lg flex flex-wrap gap-2 content-start">
                   {Array.from({ length: 30 }).map((_, i) => (
-                    <div key={i} className="h-6 w-12 bg-gray-200 rounded" style={{ width: `${Math.random() * 40 + 40}px` }}></div>
+                    <Skeleton key={i} className="h-6 rounded" style={{ width: `${Math.random() * 40 + 40}px` }} />
                   ))}
                 </div>
-                <div className="h-14 w-full bg-gray-200 rounded-lg animate-pulse"></div>
+                <Skeleton className="h-14 w-full rounded-lg" />
               </div>
             </CardContent>
           </Card>
@@ -475,7 +476,7 @@ export default function TypingTest() {
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div className="text-lg leading-relaxed font-mono min-h-[120px] max-w-full p-4 bg-gray-50 rounded-lg break-words whitespace-pre-wrap">
+                <div className="text-lg leading-relaxed font-mono min-h-30 max-w-full p-4 bg-gray-50 rounded-lg wrap-break-word whitespace-pre-wrap">
                   {testText.slice(0, 50).map((word, wordIndex) => (
                     <span key={wordIndex} className={`mr-2 ${getWordClass(wordIndex)}`}>
                       {wordIndex === currentWordIndex ? (

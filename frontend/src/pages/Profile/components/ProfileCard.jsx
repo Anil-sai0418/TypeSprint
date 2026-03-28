@@ -1,8 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { User, Mail, Phone, MapPin, Calendar, Edit, LogOut, Upload, X } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const ProfileCard = ({ user, profile, isEditing, setIsEditing, handleLogout, handleImageChange }) => {
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
   return (
     <Card className="border-border shadow-sm overflow-hidden">
       <div className="h-24 bg-linear-to-r from-blue-500/20 via-primary/10 to-green-500/20" />
@@ -47,13 +60,30 @@ const ProfileCard = ({ user, profile, isEditing, setIsEditing, handleLogout, han
                 Cancel
               </button>
             )}
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center p-2 rounded-lg border border-border text-destructive hover:bg-destructive/10 transition shadow-sm"
-              title="Logout"
-            >
-              <LogOut size={18} />
-            </button>
+            <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="inline-flex items-center justify-center p-2 rounded-lg border border-border text-destructive hover:bg-destructive/10 transition shadow-sm"
+                  title="Logout"
+                >
+                  <LogOut size={18} />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You are about to logout from the account "{user.name}". You will need to login again to access your profile.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Logout
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 

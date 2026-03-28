@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Leaderboard() {
   const [allLeaders, setAllLeaders] = useState([]);
@@ -167,47 +168,50 @@ export default function Leaderboard() {
             {/* Header Skeleton */}
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-2">
-                <div className="h-10 w-56 rounded-md bg-muted/50 animate-pulse" />
-                <div className="h-4 w-40 rounded-md bg-muted/40 animate-pulse" />
+                <Skeleton className="h-10 w-56" />
+                <Skeleton className="h-4 w-40" />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                <div className="h-11 w-64 rounded-md bg-muted/50 animate-pulse" />
-                <div className="h-10 w-40 rounded-md bg-muted/40 animate-pulse" />
+                <Skeleton className="h-11 w-64" />
+                <Skeleton className="h-10 w-40" />
               </div>
             </div>
 
             {/* Table Skeleton */}
             <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
-              <div className="bg-muted/50 h-12" />
+              <Skeleton className="h-12 w-full rounded-none" />
               {Array.from({ length: itemsPerPage }).map((_, i) => (
                 <div
                   key={i}
                   className="grid grid-cols-7 gap-4 items-center px-4 py-3 border-t"
                 >
                   {/* Rank */}
-                  <div className="h-6 w-10 rounded-md bg-muted/40 animate-pulse" />
+                  <Skeleton className="h-6 w-10" />
 
                   {/* Player */}
                   <div className="flex items-center gap-3 col-span-2">
-                    <div className="h-10 w-10 rounded-full bg-muted/50 animate-pulse" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="space-y-2">
-                      <div className="h-4 w-24 rounded bg-muted/50 animate-pulse" />
-                      <div className="h-3 w-32 rounded bg-muted/40 animate-pulse" />
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-32" />
                     </div>
                   </div>
 
                   {/* Peak */}
-                  <div className="h-6 w-14 rounded-md bg-muted/40 animate-pulse justify-self-end" />
+                  <Skeleton className="h-6 w-14 justify-self-end" />
 
                   {/* Avg */}
-                  <div className="h-6 w-14 rounded-md bg-muted/40 animate-pulse justify-self-end" />
+                  <Skeleton className="h-6 w-14 justify-self-end" />
 
                   {/* Accuracy */}
-                  <div className="h-4 w-10 rounded bg-muted/30 animate-pulse justify-self-end" />
+                  <Skeleton className="h-4 w-10 justify-self-end" />
 
                   {/* Streak */}
-                  <div className="h-6 w-12 rounded-md bg-muted/40 animate-pulse justify-self-end" />
+                  <Skeleton className="h-6 w-12 justify-self-end" />
+
+                  {/* Tests */}
+                  <Skeleton className="h-6 w-12 justify-self-end" />
                 </div>
               ))}
             </div>

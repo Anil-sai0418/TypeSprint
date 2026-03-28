@@ -14,7 +14,6 @@ const Profile = lazy(() => import('../pages/Profile'));
 const NotificationList = lazy(() => import('../components/notification/NotificationList'));
 
 // Extracted Suspense wrapper helper
-// eslint-disable-next-line
 const withSuspense = (LazyComponent) => (
   <Suspense fallback={<TypingLoader />}>
     <LazyComponent />

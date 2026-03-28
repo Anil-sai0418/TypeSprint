@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { RotateCcw, Type, Clock, Hash, AlignLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
@@ -76,6 +77,15 @@ const useTypingEngine = (settings) => {
       statsRef.current = { totalCorrect: 0, totalError: 0 };
     }
   }, [status]);
+
+  // Auto-start timer-based tests so time runs even without typing
+  useEffect(() => {
+    if (isLoading) return;
+    if (status !== "idle") return;
+    if (!settings.timeLimit) return;
+    if (words.length === 0) return;
+    startTest();
+  }, [isLoading, status, settings.timeLimit, words.length, startTest]);
 
   // OPTIMIZATION: Single-pass keystroke tracking with ref caching
   const handleInput = useCallback((val) => {
@@ -205,7 +215,7 @@ export default function TypingTest() {
   const [isFocused, setIsFocused] = useState(true);
   
   const [settings, setSettings] = useState({
-    timeLimit: 30, 
+    timeLimit: null, 
     wordLimit: null,
     showPunctuation: false,
     showNumbers: false,
@@ -222,6 +232,8 @@ export default function TypingTest() {
     handleInput, 
     restart 
   } = useTypingEngine(settings);
+
+  const isToolbarLocked = status === "running" && input.length > 0;
 
   // Initialize
   useEffect(() => { loadTest(); }, [loadTest]);
@@ -254,15 +266,15 @@ export default function TypingTest() {
       <Navigation />
 
       {/* --- Toolbar --- */}
-     <div
-  className={`
-   top-24 z-20 w-full flex justify-center py-6
-  transition-all duration-500 ease-in-out
-  ${status === "running"
-    ? "opacity-30 -translate-y-2 pointer-events-none"
-    : "opacity-100 translate-y-0"}
-  `}
->
+    <div
+    className={`
+     top-24 z-20 w-full flex justify-center py-6
+    transition-all duration-500 ease-in-out
+    ${isToolbarLocked
+      ? "opacity-30 -translate-y-2 pointer-events-none"
+      : "opacity-100 translate-y-0"}
+    `}
+  >
   <div
     className="
       relative
@@ -333,7 +345,7 @@ export default function TypingTest() {
       >
         <SelectTrigger
           className={`
-            h-9 min-w-[72px] px-3 gap-2
+            h-9 min-w-18 px-3 gap-2
             rounded-md
             border border-border/60
             bg-transparent
@@ -368,7 +380,7 @@ export default function TypingTest() {
       >
         <SelectTrigger
           className={`
-            h-9 min-w-[84px] px-3 gap-2
+            h-9 min-w-21 px-3 gap-2
             rounded-md
             border border-border/60
             bg-transparent
@@ -402,22 +414,24 @@ export default function TypingTest() {
         
         {/* Live Timer / WPM Indicator */}
         <div className="h-12 mb-8 text-primary font-bold text-2xl tracking-widest tabular-nums">
-          {status === 'running' && (
-             settings.timeLimit ? stats.timeLeft : `${stats.netWpm} WPM`
+          {settings.timeLimit ? (
+            status !== "completed" ? stats.timeLeft : null
+          ) : (
+            status === "running" ? `${stats.netWpm} WPM` : null
           )}
         </div>
 
         {/* Text Display Container */}
         <div 
-          className="relative w-full max-w-4xl min-h-[160px] text-2xl sm:text-3xl leading-relaxed outline-none"
+          className="relative w-full max-w-4xl min-h-40 text-2xl sm:text-3xl leading-relaxed outline-none"
           onClick={() => inputRef.current?.focus()}
         >
           {/* Loading Skeleton */}
           {isLoading && (
-            <div className="flex flex-wrap gap-3 animate-pulse">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-8 bg-muted rounded-md w-full opacity-20" />
-              ))}
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-8 w-full rounded-md" />
+              <Skeleton className="h-8 w-[92%] rounded-md" />
+              <Skeleton className="h-8 w-[84%] rounded-md" />
             </div>
           )}
 
@@ -434,7 +448,7 @@ export default function TypingTest() {
                   <span key={i} className="relative">
                     {/* The Cursor */}
                     {isCurrent && isFocused && (
-                      <span className="absolute -left-[2px] top-1 bottom-1 w-[2px] bg-primary animate-pulse rounded-full" />
+                      <span className="absolute -left-0.5 top-1 bottom-1 w-0.5 bg-primary animate-pulse rounded-full" />
                     )}
                     
                     {/* The Character */}

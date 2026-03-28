@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getLikeStatus, toggleLike, getLikeCount } from '../services/api';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function Footer({ isLoggedIn = false }) {
   const [connectionStatus, setConnectionStatus] = useState("offline");
@@ -11,10 +12,12 @@ function Footer({ isLoggedIn = false }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(true);
 
   // Fetch like status and count
   useEffect(() => {
     const fetchLikeData = async () => {
+      setIsLikeLoading(true);
       try {
         // Get total likes count
         const countRes = await getLikeCount();
@@ -36,6 +39,8 @@ function Footer({ isLoggedIn = false }) {
         }
       } catch (error) {
         console.error("Error fetching like data:", error);
+      } finally {
+        setIsLikeLoading(false);
       }
     };
 
@@ -245,31 +250,37 @@ function Footer({ isLoggedIn = false }) {
           <span>Like this app?</span>
           {isLoggedIn ? null : <span className="opacity-70 text-[10px]">Log in to like</span>}
       </div>
-
-      <button
-        onClick={handleLikeClick}
-        disabled={loading || liked || !isLoggedIn}
-        className={`
-            w-full relative group overflow-hidden rounded-xl border transition-all duration-300
-            px-4 py-3 flex items-center justify-center gap-2
-            ${liked 
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-default" 
-                : isLoggedIn
-                    ? "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
-                    : "bg-zinc-100/50 border-zinc-200 text-zinc-400 opacity-70 cursor-not-allowed dark:bg-zinc-800/30 dark:border-zinc-800"
-            }
-        `}
-      >
-        <span className={`transform transition-transform duration-300 ${liked ? "scale-110" : "group-hover:scale-110"}`}>
-            {liked ? "❤️" : "🤍"}
-        </span>
-        <span className="font-semibold text-xs tracking-wide">
-            {liked ? "Liked" : "Like"}
-        </span>
-        <span className="ml-1 text-[10px] font-mono opacity-60">
-            ({likes > 999 ? (likes/1000).toFixed(1) + 'k' : likes})
-        </span>
-      </button>
+      {isLikeLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-11 w-full rounded-xl" />
+        </div>
+      ) : (
+        <button
+          onClick={handleLikeClick}
+          disabled={loading || liked || !isLoggedIn}
+          className={`
+              w-full relative group overflow-hidden rounded-xl border transition-all duration-300
+              px-4 py-3 flex items-center justify-center gap-2
+              ${liked 
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-default" 
+                  : isLoggedIn
+                      ? "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                      : "bg-zinc-100/50 border-zinc-200 text-zinc-400 opacity-70 cursor-not-allowed dark:bg-zinc-800/30 dark:border-zinc-800"
+              }
+          `}
+        >
+          <span className={`transform transition-transform duration-300 ${liked ? "scale-110" : "group-hover:scale-110"}`}>
+              {liked ? "❤️" : "🤍"}
+          </span>
+          <span className="font-semibold text-xs tracking-wide">
+              {liked ? "Liked" : "Like"}
+          </span>
+          <span className="ml-1 text-[10px] font-mono opacity-60">
+              ({likes > 999 ? (likes/1000).toFixed(1) + 'k' : likes})
+          </span>
+        </button>
+      )}
     </div>
   </div>
 </div>

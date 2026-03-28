@@ -6,13 +6,24 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import BreadcrumbNav from "../BreadcrumbNav";
 import Notification from "../notification/Notification";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import ShareModal from "../share/Share";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./alert-dialog";
 
 export default function Navigation() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
@@ -116,7 +127,7 @@ export default function Navigation() {
                       </button>
                     </div>
                     <div className="border-t border-border">
-                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors">
+                      <button onClick={(e) => { e.preventDefault(); setShowLogoutDialog(true); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors">
                         <LogOut className="h-4 w-4" />
                         Log out
                       </button>
@@ -164,7 +175,7 @@ export default function Navigation() {
                     <Share2 className="h-4 w-4" />
                     Share this app
                   </button>
-                  <button onClick={() => { setOpen(false); handleLogout(); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition mt-2 border-t border-border pt-2">
+                  <button onClick={() => { setOpen(false); setShowLogoutDialog(true); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition mt-2 border-t border-border pt-2">
                     <LogOut className="h-4 w-4" />
                     Log out
                   </button>
@@ -188,6 +199,23 @@ export default function Navigation() {
           />
         )}
       </AnimatePresence>
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to logout from the account "{user?.name || "User"}". You will need to login again to access your profile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

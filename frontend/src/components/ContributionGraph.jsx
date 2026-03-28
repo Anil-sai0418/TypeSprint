@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Activity, AlertCircle, Loader } from 'lucide-react';
+import { Activity, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   generateLast365Days,
   mergeActivityData,
@@ -70,10 +71,55 @@ function ContributionGraph({ email, token, isDark = false }) {
 
   if (loading && !weeks.length) {
     return (
-      <div className={`p-6 rounded-lg border ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-        <div className="flex items-center justify-center gap-2 h-32">
-          <Loader className="animate-spin" size={20} />
-          <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>Loading...</span>
+      <div className={`space-y-4 p-6 rounded-lg border ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+
+        <div className={`grid grid-cols-4 gap-3 p-4 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className={`p-3 rounded-md ${isDark ? 'bg-gray-700' : 'bg-white border border-gray-300'}`}>
+              <Skeleton className="h-3 w-12" />
+              <Skeleton className="h-6 w-16 mt-2" />
+            </div>
+          ))}
+        </div>
+
+        <div className={`p-4 rounded-lg border overflow-x-auto ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+          <div style={{ display: 'inline-block', minWidth: '100%' }}>
+            <div style={{ display: 'flex', marginBottom: '8px', paddingLeft: '30px' }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {Array.from({ length: 12 }).map((_, idx) => (
+                  <Skeleton key={idx} className="h-3 w-4" />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {Array.from({ length: 7 }).map((_, idx) => (
+                  <Skeleton key={idx} className="h-3 w-6" />
+                ))}
+              </div>
+
+              <div className="grid grid-rows-7 grid-flow-col gap-1">
+                {Array.from({ length: 52 * 7 }).map((_, idx) => (
+                  <Skeleton key={idx} className="h-3 w-3 rounded-[2px]" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={`flex items-center justify-center gap-4 text-xs p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <Skeleton className="h-3 w-8" />
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <Skeleton key={idx} className="h-3 w-3 rounded-[2px]" />
+            ))}
+          </div>
+          <Skeleton className="h-3 w-8" />
         </div>
       </div>
     );

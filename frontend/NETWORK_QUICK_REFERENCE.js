@@ -95,27 +95,27 @@ api.likes.removeLike(resultId, token)
 // 6. RESPONSE FORMAT
 // ==================
 // Success
-{
-  error: false,
-  data: { /* API response */ },
-  status: 200
-}
+// {
+//   error: false,
+//   data: { /* API response */ },
+//   status: 200
+// }
 
 // Offline
-{
-  error: true,
-  message: "You are currently offline...",
-  offline: true,
-  retry: () => { /* retry function */ }
-}
+// {
+//   error: true,
+//   message: "You are currently offline...",
+//   offline: true,
+//   retry: () => { /* retry function */ }
+// }
 
 // Error
-{
-  error: true,
-  message: "Failed to complete request",
-  code: "NETWORK_ERROR",
-  retry: () => { /* retry function */ }
-}
+// {
+//   error: true,
+//   message: "Failed to complete request",
+//   code: "NETWORK_ERROR",
+//   retry: () => { /* retry function */ }
+// }
 
 // ============================================
 
