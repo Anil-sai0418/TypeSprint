@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useQuery } from '@tanstack/react-query'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { RotateCcw } from "lucide-react"
@@ -149,6 +150,17 @@ export default function TypingTest() {
   const [currentInput, setCurrentInput] = useState("")
   const [completedWords, setCompletedWords] = useState([])
 
+  // Store and cache word sets data
+  const { data: wordData, isLoading } = useQuery({
+    queryKey: ['wordSets'],
+    queryFn: async () => {
+      // Simulating a backend call. When real backend is ready, replace this with fetch/api call.
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      return WORD_SETS
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  })
+
   const [isTestActive, setIsTestActive] = useState(false)
   const [isTestComplete, setIsTestComplete] = useState(false)
   const [timeLeft, setTimeLeft] = useState(testDuration)
@@ -165,7 +177,9 @@ export default function TypingTest() {
   const timerRef = useRef(null)
 
   const generateTestText = useCallback(() => {
-    const words = includePunctuation ? [...WORD_SETS.common, ...WORD_SETS.punctuation] : WORD_SETS.common
+    // Fallback to hardcoded WORD_SETS if data is not loaded yet
+    const sourceWordSets = wordData || WORD_SETS
+    const words = includePunctuation ? [...sourceWordSets.common, ...sourceWordSets.punctuation] : sourceWordSets.common
 
     const targetLength = testMode === "words" ? wordCount : 200
     const text = []
@@ -175,7 +189,7 @@ export default function TypingTest() {
     }
 
     return text
-  }, [testMode, wordCount, includePunctuation])
+  }, [testMode, wordCount, includePunctuation, wordData])
 
   const resetTest = useCallback(() => {
     setTestText(generateTestText())
@@ -292,6 +306,62 @@ export default function TypingTest() {
       }
     }
   }, [])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header Skeleton */}
+          <div className="text-center space-y-3 flex flex-col items-center">
+            <div className="h-9 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-5 w-64 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Settings Skeleton */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 items-center justify-center">
+                <div className="h-9 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-9 w-40 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-9 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-9 w-24 bg-gray-200 rounded animate-pulse ml-auto"></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats Skeleton */}
+          <div className="flex justify-center gap-6">
+            <div className="text-center flex flex-col items-center space-y-2">
+              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-10 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="text-center flex flex-col items-center space-y-2">
+              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="text-center flex flex-col items-center space-y-2">
+              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 w-10 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Test Area Skeleton */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="min-h-[120px] max-w-full p-4 bg-gray-100 rounded-lg animate-pulse flex flex-wrap gap-2 content-start">
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <div key={i} className="h-6 w-12 bg-gray-200 rounded" style={{ width: `${Math.random() * 40 + 40}px` }}></div>
+                  ))}
+                </div>
+                <div className="h-14 w-full bg-gray-200 rounded-lg animate-pulse"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">

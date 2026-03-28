@@ -34,6 +34,8 @@ export const NotificationProvider = ({ children }) => {
         return `inactivity_${data.userId}`;
       case 'leaderboard_rank_change':
         return `rank_${data.userId}_${data.newRank}`;
+      case 'achievement_unlocked':
+        return `achievement_${data.userId}_${data.achievementId}`;
       case 'streak_milestone':
         return `streak_${data.userId}_${data.streakDays}`;
       default:

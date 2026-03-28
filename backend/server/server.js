@@ -125,25 +125,47 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// Start server with Cluster Mode for maximum performance
 const PORT = process.env.PORT || 10000;
-const server = app.listen(PORT, () => {
-  console.log(`\n🚀 Server is live in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`📍 URL: http://localhost:${PORT}/`);
-  console.log(`📦 Node Version: ${process.version}`);
-});
+const cluster = require('cluster');
+const os = require('os');
+const numCPUs = os.cpus().length;
 
-// Graceful Shutdown
-process.on('SIGTERM', () => {
-  console.info('SIGTERM signal received.');
-  console.log('Closing HTTP server.');
-  server.close(() => {
-    console.log('HTTP server closed.');
-    sequelize.close().then(() => {
-      console.log('Sequelize connection closed.');
-      process.exit(0);
+if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
+  console.log(`\n🚀 Master ${process.pid} is running`);
+  console.log(`⚙️ Scaling across ${numCPUs} CPU cores...\n`);
+
+  // Fork workers.
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  // Restart workers if they die
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`⚠️ Worker ${worker.process.pid} died. Restarting...`);
+    cluster.fork();
+  });
+} else {
+  const server = app.listen(PORT, () => {
+    if (process.env.NODE_ENV !== 'production' || !cluster.isMaster) {
+      console.log(`\n🚀 Server is live in ${process.env.NODE_ENV || 'development'} mode (Worker ${process.pid})`);
+      console.log(`📍 URL: http://localhost:${PORT}/`);
+      console.log(`📦 Node Version: ${process.version}`);
+    }
+  });
+
+  // Graceful Shutdown
+  process.on('SIGTERM', () => {
+    console.info('SIGTERM signal received.');
+    console.log('Closing HTTP server.');
+    server.close(() => {
+      console.log('HTTP server closed.');
+      sequelize.close().then(() => {
+        console.log('Sequelize connection closed.');
+        process.exit(0);
+      });
     });
   });
-});
+}
 
 module.exports = app;

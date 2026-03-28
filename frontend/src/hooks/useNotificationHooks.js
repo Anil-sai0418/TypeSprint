@@ -3,12 +3,14 @@ import { useNotification } from '../context/NotificationContext';
 import { getLeaderboard, getFullUserProfile } from '../services/api';
 
 // Hook to track user activity and send inactivity reminders
-export const useActivityTracking = () => {
+export const useActivityTracking = ({ enabled = true, userEmail } = {}) => {
   const { addNotification } = useNotification();
   const lastActivityRef = useRef(Date.now());
   const inactivityReminderSentRef = useRef(false);
 
   useEffect(() => {
+    if (!enabled || !userEmail) return;
+
     // Update last activity on user interaction
     const updateActivity = () => {
       lastActivityRef.current = Date.now();
@@ -29,14 +31,11 @@ export const useActivityTracking = () => {
         timeSinceLastActivity >= 24 * hourInMs &&
         !inactivityReminderSentRef.current
       ) {
-        const userEmail = localStorage.getItem('userEmail');
-        if (userEmail) {
-          addNotification('inactivity_reminder', {
-            userId: userEmail,
-            hoursInactive: Math.floor(timeSinceLastActivity / hourInMs),
-          });
-          inactivityReminderSentRef.current = true;
-        }
+        addNotification('inactivity_reminder', {
+          userId: userEmail,
+          hoursInactive: Math.floor(timeSinceLastActivity / hourInMs),
+        });
+        inactivityReminderSentRef.current = true;
       }
     }, hourInMs);
 
@@ -46,62 +45,54 @@ export const useActivityTracking = () => {
       window.removeEventListener('click', updateActivity);
       clearInterval(inactivityCheckInterval);
     };
-  }, [addNotification]);
+  }, [addNotification, enabled, userEmail]);
 };
 
 // Hook to monitor leaderboard ranking changes
-export const useLeaderboardTracking = () => {
+export const useLeaderboardTracking = ({ enabled = true, userEmail } = {}) => {
   const { addNotification } = useNotification();
   const previousRankRef = useRef(null);
-  const userEmailRef = useRef(localStorage.getItem('userEmail'));
 
   useEffect(() => {
-    if (!userEmailRef.current) {
-      console.log('[LeaderboardTracking] No user email found, skipping');
+    if (!enabled || !userEmail) {
       return;
     }
+
+    previousRankRef.current = null;
 
     const checkRank = async () => {
       try {
         const response = await getLeaderboard(200);
         
         if (!response.success) {
-          console.log('[LeaderboardTracking] Failed to fetch leaderboard:', response.message);
           return;
         }
 
         if (!response.leaderboard || !Array.isArray(response.leaderboard)) {
-          console.log('[LeaderboardTracking] Invalid leaderboard data:', response);
           return;
         }
 
         // Find user by email in the leaderboard
         const userInLeaderboard = response.leaderboard.find(
-          (leader) => leader.email && leader.email.toLowerCase() === userEmailRef.current.toLowerCase()
+          (leader) => leader.email && leader.email.toLowerCase() === userEmail.toLowerCase()
         );
 
         if (!userInLeaderboard) {
-          console.log('[LeaderboardTracking] User not found in leaderboard. Email:', userEmailRef.current);
-          console.log('[LeaderboardTracking] Leaderboard emails:', response.leaderboard.map(l => l.email).slice(0, 5));
           return;
         }
 
         const currentRank = userInLeaderboard.rank;
-        console.log('[LeaderboardTracking] Found user rank:', currentRank);
 
         if (previousRankRef.current === null) {
           // First check - just store the rank
           previousRankRef.current = currentRank;
-          console.log(`[LeaderboardTracking] Initial rank set: #${currentRank}`);
         } else if (previousRankRef.current !== currentRank) {
           // Rank changed - send notification
           const rankChanged = previousRankRef.current - currentRank;
           const isImprovement = rankChanged > 0;
 
-          console.log(`[LeaderboardTracking] RANK CHANGED! From #${previousRankRef.current} to #${currentRank}`);
-
           addNotification('leaderboard_rank_change', {
-            userId: userEmailRef.current,
+            userId: userEmail,
             previousRank: previousRankRef.current,
             newRank: currentRank,
             improvement: isImprovement,
@@ -109,39 +100,36 @@ export const useLeaderboardTracking = () => {
           });
 
           previousRankRef.current = currentRank;
-        } else {
-          console.log(`[LeaderboardTracking] Rank unchanged: #${currentRank}`);
         }
       } catch (error) {
-        console.error('[LeaderboardTracking] Error checking leaderboard rank:', error);
+        console.error('Error checking leaderboard rank:', error);
       }
     };
 
     // Check immediately on mount
-    console.log('[LeaderboardTracking] Starting leaderboard tracking for:', userEmailRef.current);
     checkRank();
 
-    // Then check every 30 seconds (faster for real-time detection)
-    const checkRankInterval = setInterval(checkRank, 30 * 1000);
+    // Then check every minute
+    const checkRankInterval = setInterval(checkRank, 60 * 1000);
 
     return () => clearInterval(checkRankInterval);
-  }, [addNotification]);
+  }, [addNotification, enabled, userEmail]);
 };
 
 // Hook to monitor streaks
-export const useStreakTracking = () => {
+export const useStreakTracking = ({ enabled = true, userEmail, token } = {}) => {
   const { addNotification } = useNotification();
   const previousStreakRef = useRef(null);
-  const userEmailRef = useRef(localStorage.getItem('userEmail'));
-  const tokenRef = useRef(localStorage.getItem('token'));
 
   useEffect(() => {
-    if (!userEmailRef.current || !tokenRef.current) return; // Don't track if not logged in
+    if (!enabled || !userEmail || !token) return; // Don't track if not logged in
 
-    // Check streak every minute (faster for testing)
+    previousStreakRef.current = null;
+
+    // Check streak periodically
     const checkStreak = async () => {
       try {
-        const response = await getFullUserProfile(userEmailRef.current, tokenRef.current);
+        const response = await getFullUserProfile(userEmail, token);
         
         if (response.success && response.userProfile) {
           const currentStreak = response.userProfile?.streak || 0;
@@ -149,16 +137,12 @@ export const useStreakTracking = () => {
           if (previousStreakRef.current === null) {
             // First check - just store the streak
             previousStreakRef.current = currentStreak;
-            console.log(`[StreakTracking] Initial streak: ${currentStreak} days`);
           } else if (currentStreak > previousStreakRef.current) {
             // Streak increased
-            console.log(`[StreakTracking] Streak increased from ${previousStreakRef.current} to ${currentStreak} days`);
-            
             // Check if it's a milestone (5, 10, 15, etc.)
             if (currentStreak % 5 === 0) {
-              console.log(`[StreakTracking] Milestone reached: ${currentStreak} days!`);
               addNotification('streak_milestone', {
-                userId: userEmailRef.current,
+                userId: userEmail,
                 streakDays: currentStreak,
                 isMilestone: true,
               });
@@ -166,7 +150,6 @@ export const useStreakTracking = () => {
             previousStreakRef.current = currentStreak;
           } else if (currentStreak < previousStreakRef.current) {
             // Streak was lost
-            console.log(`[StreakTracking] Streak lost: from ${previousStreakRef.current} to ${currentStreak} days`);
             previousStreakRef.current = currentStreak;
           }
         }
@@ -178,9 +161,59 @@ export const useStreakTracking = () => {
     // Check immediately on mount
     checkStreak();
 
-    // Then check every 1 minute
-    const checkStreakInterval = setInterval(checkStreak, 1 * 60 * 1000);
+    // Then check every 3 minutes
+    const checkStreakInterval = setInterval(checkStreak, 3 * 60 * 1000);
 
     return () => clearInterval(checkStreakInterval);
-  }, [addNotification]);
+  }, [addNotification, enabled, userEmail, token]);
+};
+
+// Hook to monitor newly unlocked achievements
+export const useAchievementTracking = ({ enabled = true, userEmail, token } = {}) => {
+  const { addNotification } = useNotification();
+  const knownAchievementsRef = useRef(null);
+
+  useEffect(() => {
+    if (!enabled || !userEmail || !token) return;
+
+    knownAchievementsRef.current = null;
+
+    const checkAchievements = async () => {
+      try {
+        const response = await getFullUserProfile(userEmail, token);
+        if (!response?.success) return;
+
+        const currentAchievements =
+          response.profile?.achievements ||
+          response.userProfile?.achievements ||
+          [];
+
+        if (!Array.isArray(currentAchievements)) return;
+
+        if (knownAchievementsRef.current === null) {
+          knownAchievementsRef.current = currentAchievements;
+          return;
+        }
+
+        const previousSet = new Set(knownAchievementsRef.current);
+        const newUnlocks = currentAchievements.filter((item) => !previousSet.has(item));
+
+        newUnlocks.forEach((achievementId) => {
+          addNotification('achievement_unlocked', {
+            userId: userEmail,
+            achievementId,
+          });
+        });
+
+        knownAchievementsRef.current = currentAchievements;
+      } catch (error) {
+        console.error('Error checking achievements:', error);
+      }
+    };
+
+    checkAchievements();
+    const checkAchievementsInterval = setInterval(checkAchievements, 60 * 1000);
+
+    return () => clearInterval(checkAchievementsInterval);
+  }, [addNotification, enabled, userEmail, token]);
 };

@@ -55,10 +55,7 @@ export default function Navigation() {
               <span className="text-blue-500">Type</span>
               <span className="text-green-500 ml-1">vex</span>
             </span>
-            <div className="hidden lg:flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium ml-4 sm:ml-10">
-              <NavLink to="/type" className={({ isActive }) => isActive ? "text-green-500" : "text-muted-foreground hover:text-green-500"}>Type</NavLink>
-              <NavLink to="/learning" className={({ isActive }) => isActive ? "text-green-500" : "text-muted-foreground hover:text-green-500"}>Learning</NavLink>
-            </div>
+           
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -138,10 +135,7 @@ export default function Navigation() {
         {open && (
           <div className="sm:hidden absolute top-16 left-0 right-0 bg-background border-b border-border shadow-lg">
             <div className="px-4 py-3 space-y-3">
-              <div className="flex flex-col gap-2 pb-3 border-b border-border">
-                <NavLink to="/type" onClick={() => setOpen(false)} className={({ isActive }) => `px-3 py-2 rounded-lg transition ${isActive ? "bg-green-500/20 text-green-500" : "text-muted-foreground hover:text-green-500"}`}>Type</NavLink>
-                <NavLink to="/learning" onClick={() => setOpen(false)} className={({ isActive }) => `px-3 py-2 rounded-lg transition ${isActive ? "bg-green-500/20 text-green-500" : "text-muted-foreground hover:text-green-500"}`}>Learning</NavLink>
-              </div>
+              
 
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm font-medium text-muted-foreground">Theme</span>

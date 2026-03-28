@@ -7,6 +7,7 @@ import { AuthProvider } from './context/useAuth'
 import { OfflineScreen, NetworkStatusBanner, ReconnectedToast } from './components/NetworkStatus'
 import { useNetworkStatus } from './context/useNetworkStatus'
 import routes from './router/routes'
+import NotificationTracker from './components/notification/NotificationTracker'
 
 function AppContent() {
   const { isConnected } = useNetworkStatus();
@@ -25,6 +26,7 @@ function AppContent() {
       {/* App content */}
       {isConnected && (
         <BrowserRouter>
+          <NotificationTracker />
           <Routes>
             {routes.map((route, index) => (
               <Route key={index} path={route.path} element={route.element} />

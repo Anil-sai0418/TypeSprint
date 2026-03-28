@@ -1,16 +1,25 @@
-import { Navigate } from 'react-router-dom';
-import Home from '../pages/Home';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import Result from '../pages/Result';
-import First from '../pages/First';
-import Leaderboard from '../pages/Leaderboard';
-import NotFound from '../pages/404';
-import Profile from '../pages/Profile';
-import TypingTest from '../routes/type/page';
+import { lazy, Suspense } from 'react';
 import TypingLoader from '../Loding/Loading';
 import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
-import NotificationList from '../components/notification/NotificationList';
+
+// Lazy load components for performance optimization & code splitting
+const Home = lazy(() => import('../pages/Home'));
+const Login = lazy(() => import('../pages/Login'));
+const Register = lazy(() => import('../pages/Register'));
+const Result = lazy(() => import('../pages/Result'));
+const First = lazy(() => import('../pages/First'));
+const Leaderboard = lazy(() => import('../pages/Leaderboard'));
+const NotFound = lazy(() => import('../pages/404'));
+const Profile = lazy(() => import('../pages/Profile'));
+const NotificationList = lazy(() => import('../components/notification/NotificationList'));
+
+// Extracted Suspense wrapper helper
+// eslint-disable-next-line
+const withSuspense = (LazyComponent) => (
+  <Suspense fallback={<TypingLoader />}>
+    <LazyComponent />
+  </Suspense>
+);
 
 /**
  * App Routes Configuration
@@ -21,27 +30,27 @@ const routes = [
     path: '/notifications',
     element: (
       <ProtectedRoute>
-        <NotificationList />
+        {withSuspense(NotificationList)}
       </ProtectedRoute>
     )
   },
   {
     path: '*',
-    element: <NotFound />
+    element: withSuspense(NotFound)
   },
   {
     path: '/',
-    element: <First />
+    element: withSuspense(First)
   },
   {
     path: '/first',
-    element: <First />
+    element: withSuspense(First)
   },
   {
     path: '/home',
     element: (
       <ProtectedRoute>
-        <Home />
+        {withSuspense(Home)}
       </ProtectedRoute>
     )
   },
@@ -49,7 +58,7 @@ const routes = [
     path: '/type',
     element: (
       <ProtectedRoute>
-        <Home />
+        {withSuspense(Home)}
       </ProtectedRoute>
     )
   },
@@ -57,7 +66,7 @@ const routes = [
     path: '/login',
     element: (
       <PublicRoute>
-        <Login />
+        {withSuspense(Login)}
       </PublicRoute>
     )
   },
@@ -65,7 +74,7 @@ const routes = [
     path: '/register',
     element: (
       <PublicRoute>
-        <Register />
+        {withSuspense(Register)}
       </PublicRoute>
     )
   },
@@ -73,7 +82,7 @@ const routes = [
     path: '/result',
     element: (
       <ProtectedRoute>
-        <Result />
+        {withSuspense(Result)}
       </ProtectedRoute>
     )
   },
@@ -81,7 +90,7 @@ const routes = [
     path: '/leaderboard',
     element: (
       <ProtectedRoute>
-        <Leaderboard />
+        {withSuspense(Leaderboard)}
       </ProtectedRoute>
     )
   },
@@ -89,7 +98,7 @@ const routes = [
     path: '/profile',
     element: (
       <ProtectedRoute>
-        <Profile />
+        {withSuspense(Profile)}
       </ProtectedRoute>
     )
   },
