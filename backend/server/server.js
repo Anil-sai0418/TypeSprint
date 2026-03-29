@@ -95,6 +95,8 @@ app.use("/profile", require('./routes/profile'));
 app.use("/typing-test", require('./routes/typingTest'));
 app.use("/contribution", require('./routes/contribution'));
 app.use("/like", require('./routes/like'));
+app.use("/api/v1/notifications", require('./routes/notifications'));
+app.use("/notifications", require('./routes/notifications'));
 app.use("", require('./routes/utils'));
 
 // Health Check Endpoint

@@ -9,12 +9,14 @@ import { useNetworkStatus } from './context/useNetworkStatus'
 import routes from './router/routes'
 import NotificationTracker from './components/notification/NotificationTracker'
 import SEO from './components/SEO'
+import PushNotificationSetup from './components/notification/PushNotificationSetup'
 
 function AppContent() {
   const { isConnected } = useNetworkStatus();
 
   return (
     <>
+      <PushNotificationSetup />
       {/* Show full-page offline screen when offline */}
       {!isConnected && <OfflineScreen />}
 

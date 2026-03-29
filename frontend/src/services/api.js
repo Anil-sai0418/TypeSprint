@@ -53,6 +53,25 @@ export const login = async (email, password) => {
   }
 };
 
+// ==================== NOTIFICATIONS ====================
+
+export const registerDeviceToken = async (token, authToken) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/notifications/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ token }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error registering device token:', error);
+    throw error;
+  }
+};
+
 // ==================== PROFILE ENDPOINTS ====================
 
 export const getFullUserProfile = async (email, token) => {

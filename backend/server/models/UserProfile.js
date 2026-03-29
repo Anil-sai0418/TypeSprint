@@ -68,6 +68,9 @@ const UserProfile = sequelize.define('UserProfile', {
   lastTestDate: {
     type: DataTypes.DATE,
   },
+  lastStreakReminder: {
+    type: DataTypes.DATE,
+  },
 }, {
   timestamps: true,
   tableName: 'userProfiles',
