@@ -17,6 +17,19 @@ html.dark {
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes border-rotate {
+  from {
+    transform: translateZ(0) rotate(0deg);
+  }
+  to {
+    transform: translateZ(0) rotate(360deg);
+  }
+}
+
+.rotate-animation {
+  animation: border-rotate 6s linear infinite;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

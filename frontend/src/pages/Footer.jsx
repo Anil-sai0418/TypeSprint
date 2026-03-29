@@ -2,8 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getLikeStatus, toggleLike, getLikeCount } from '../services/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useAuth } from '../context/useAuth';
+import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function Footer({ isLoggedIn = false }) {
+  const { user } = useAuth();
   const [connectionStatus, setConnectionStatus] = useState("offline");
   const [networkInfo, setNetworkInfo] = useState({
     type: "unknown",
@@ -13,6 +22,7 @@ function Footer({ isLoggedIn = false }) {
   const [likes, setLikes] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(true);
+  const [showToast, setShowToast] = useState(false);
 
   // Fetch like status and count
   useEffect(() => {
@@ -116,6 +126,37 @@ function Footer({ isLoggedIn = false }) {
       if (res.success) {
         setLiked(res.userLiked);
         setLikes(res.totalLikes);
+        
+        if (res.userLiked) {
+          // Trigger Confetti Effect
+          const duration = 2500;
+          const end = Date.now() + duration;
+
+          const frame = () => {
+            confetti({
+              particleCount: 5,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: ['#34D399', '#10B981', '#FCD34D', '#EF4444', '#A855F7']
+            });
+            confetti({
+              particleCount: 5,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: ['#34D399', '#10B981', '#FCD34D', '#EF4444', '#A855F7']
+            });
+
+            if (Date.now() < end) {
+              requestAnimationFrame(frame);
+            }
+          };
+          frame();
+
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 4000);
+        }
       }
     } catch (error) {
       console.error("Error toggling like:", error);
@@ -127,6 +168,48 @@ function Footer({ isLoggedIn = false }) {
 
   return (
     <footer className="relative bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white overflow-hidden font-sans mt-auto border-t border-zinc-200 dark:border-zinc-800">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed bottom-24 right-6 z-50 pointer-events-auto"
+          >
+            <div className="relative overflow-hidden px-6 py-4 bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl flex items-center gap-4 min-w-[300px]">
+              
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-[100%] animate-[shimmer_2s_infinite]" />
+
+              <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-2xl">
+                <span className="drop-shadow-sm animate-bounce">💖</span>
+              </div>
+              
+              <div className="relative z-10 flex flex-col flex-1">
+                <span className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent">
+                  Thank you!
+                </span>
+                <span className="text-[13px] font-medium text-zinc-600 dark:text-zinc-300 mt-0.5">
+                  Warm greetings, <span className="text-emerald-600 dark:text-emerald-400 font-bold">{user?.name || localStorage.getItem('userEmail')?.split('@')[0] || 'Guest'}</span>! 🎉
+                </span>
+              </div>
+              
+              <button 
+                onClick={() => setShowToast(false)} 
+                className="relative z-10 p-2 ml-2 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Background "Type" Layer */}
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
         <span className="text-[15rem] sm:text-[20rem] md:text-[30rem] font-black text-zinc-100 dark:text-[#18181b] leading-none tracking-tighter opacity-100 dark:opacity-100 translate-y-[5%]">
@@ -258,12 +341,12 @@ function Footer({ isLoggedIn = false }) {
       ) : (
         <button
           onClick={handleLikeClick}
-          disabled={loading || liked || !isLoggedIn}
+          disabled={loading || !isLoggedIn}
           className={`
               w-full relative group overflow-hidden rounded-xl border transition-all duration-300
               px-4 py-3 flex items-center justify-center gap-2
               ${liked 
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-default" 
+                  ? "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-pointer" 
                   : isLoggedIn
                       ? "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
                       : "bg-zinc-100/50 border-zinc-200 text-zinc-400 opacity-70 cursor-not-allowed dark:bg-zinc-800/30 dark:border-zinc-800"
@@ -291,21 +374,29 @@ function Footer({ isLoggedIn = false }) {
       {/* Bottom Section */}
       <div className="border-t border-zinc-200 dark:border-zinc-800">
          <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center text-[0.65rem] font-bold text-zinc-400 uppercase tracking-wider">
-          <p>© {new Date().getFullYear()} Typing Sprint. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} TypeVex. All rights reserved.</p>
           
           <div className="relative mt-4 md:mt-0 flex gap-4 items-center">
+            
             <span className="text-zinc-500">
-              Developed by <span className="text-zinc-900 dark:text-zinc-100 font-semibold px-1">Anil</span>
+              Developed by 
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href="https://anilsai-portfolio.vercel.app/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-900 dark:text-zinc-100 font-semibold px-1 hover:underline cursor-pointer"
+                  >
+                    Anil
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Portfolio</p>
+                </TooltipContent>
+              </Tooltip>
             </span>
 
-            <a
-              href="https://anilsai-portfolio.vercel.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 transition-colors text-[0.6rem]"
-            >
-              Portfolio ↗
-            </a>
           </div>
         </div>
       </div>

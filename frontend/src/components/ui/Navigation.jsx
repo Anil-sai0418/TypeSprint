@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import BreadcrumbNav from "../BreadcrumbNav";
-import Notification from "../notification/Notification";
+import { useNotification } from "../../context/NotificationContext";
 import { AnimatePresence } from "framer-motion";
 import ShareModal from "../share/Share";
 import {
@@ -20,13 +20,13 @@ import {
 } from "./alert-dialog";
 
 export default function Navigation() {
-  const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const { unreadCount } = useNotification();
 
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
@@ -69,10 +69,9 @@ export default function Navigation() {
            
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex items-center gap-3">
+          <div className="flex items-center gap-3 sm:gap-7">
+            <div className="flex items-center gap-3 sm:gap-7">
               <ThemeToggle />
-              <Notification />
             </div>
 
             {!loading && !isAuthenticated ? (
@@ -80,18 +79,23 @@ export default function Navigation() {
             ) : loading ? (
               <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">Loading...</div>
             ) : (
-              <div className="relative hidden sm:block">
+              <div className="relative block">
                 <button 
                   ref={buttonRef} 
                   aria-haspopup="menu" 
                   aria-expanded={userMenuOpen} 
                   onClick={() => setUserMenuOpen(!userMenuOpen)} 
-                  className="p-1 rounded-xl transition-all duration-300 group
+                  className="relative p-1 rounded-xl transition-all duration-300 group
                              bg-gray-100 dark:bg-zinc-900/50 
                              hover:bg-gray-200 dark:hover:bg-zinc-800 
                              border border-gray-200 dark:border-zinc-700/50
                              focus:outline-none focus:ring-2 focus:ring-green-500/50"
                 >
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 z-10 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-sm ring-2 ring-background">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                   <div className="h-9 w-9 rounded-lg overflow-hidden flex items-center justify-center bg-muted/30">
                     {user?.profileImage ? (
                       <img 
@@ -121,6 +125,14 @@ export default function Navigation() {
                         <User className="h-4 w-4" />
                         User Details
                       </button>
+                      <button onClick={() => { setUserMenuOpen(false); navigate("/notifications"); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors">
+                        <div className="relative flex">
+                          <Bell className="h-4 w-4" />
+                          {unreadCount > 0 && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border border-background"></span>}
+                        </div>
+                        Notifications
+                        {unreadCount > 0 && <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                      </button>
                       <button onClick={() => { setUserMenuOpen(false); setShareModalOpen(true); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors">
                         <Share2 className="h-4 w-4" />
                         Share this app
@@ -136,58 +148,8 @@ export default function Navigation() {
                 )}
               </div>
             )}
-
-            <button onClick={() => setOpen(!open)} className="sm:hidden p-2 rounded-md hover:bg-muted transition">
-              {open ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
         </div>
-
-        {open && (
-          <div className="sm:hidden absolute top-16 left-0 right-0 bg-background border-b border-border shadow-lg">
-            <div className="px-4 py-3 space-y-3">
-              
-
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-muted-foreground">Theme</span>
-                <ThemeToggle />
-              </div>
-
-              <div className="py-2 border-t border-b border-border">
-                <NavLink to="/notifications" onClick={() => setOpen(false)} className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg transition ${isActive ? "bg-green-500/20 text-green-500" : "text-muted-foreground hover:text-green-500"}`}>
-                  <Bell className="h-4 w-4" />
-                  Notifications
-                </NavLink>
-              </div>
-
-              {isAuthenticated && user && (
-                <div className="pt-2">
-                  <div className="px-3 py-2 mb-2 border-b border-border">
-                    <p className="text-sm font-medium truncate">{user.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email || ""}</p>
-                    {user.provider && <p className="text-xs text-green-500 mt-1">Via {user.provider}</p>}
-                  </div>
-                  <button onClick={() => { setOpen(false); navigate("/profile"); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted rounded-lg transition">
-                    <User className="h-4 w-4" />
-                    User Details
-                  </button>
-                  <button onClick={() => { setOpen(false); setShareModalOpen(true); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted rounded-lg transition">
-                    <Share2 className="h-4 w-4" />
-                    Share this app
-                  </button>
-                  <button onClick={() => { setOpen(false); setShowLogoutDialog(true); }} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition mt-2 border-t border-border pt-2">
-                    <LogOut className="h-4 w-4" />
-                    Log out
-                  </button>
-                </div>
-              )}
-
-              {!loading && !isAuthenticated && (
-                <button onClick={() => { setOpen(false); navigate("/login"); }} className="w-full px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition-colors mt-2">Login</button>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
 
       <BreadcrumbNav />

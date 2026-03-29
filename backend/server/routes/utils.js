@@ -83,6 +83,54 @@ router.get("/random-text", (req, res) => {
     }
 
     let wordArray = generatedWords.slice(0, limit);
+
+    // Add numbers naturally (mixed throughout the text)
+    if (hasNumbers) {
+      wordArray = wordArray.map(word => {
+        // 15% chance to replace a word with a random number (but ensure at least some remain words)
+        if (Math.random() < 0.15) {
+          return Math.floor(Math.random() * 1000).toString();
+        }
+        return word;
+      });
+    }
+
+    // Add punctuation naturally (sentence format with capitals)
+    if (hasPunctuation) {
+      let isNewSentence = true;
+      wordArray = wordArray.map((word, index) => {
+        let modifiedWord = word;
+        
+        // Capitalize if it's the start of a new sentence
+        if (isNewSentence && modifiedWord.length > 0) {
+          modifiedWord = modifiedWord.charAt(0).toUpperCase() + modifiedWord.slice(1);
+          isNewSentence = false;
+        }
+
+        // Add punctuation to some words
+        if (index < wordArray.length - 1) {
+          const rand = Math.random();
+          if (rand < 0.08) {
+            modifiedWord += ',';
+          } else if (rand < 0.12) {
+            modifiedWord += '.';
+            isNewSentence = true;
+          } else if (rand < 0.14) {
+            modifiedWord += '?';
+            isNewSentence = true;
+          } else if (rand < 0.15) {
+            modifiedWord += '!';
+            isNewSentence = true;
+          }
+        } else {
+          // Last word gets a sentence ending punctuation
+          const endPunct = ['.', '!', '?'][Math.floor(Math.random() * 3)];
+          modifiedWord += endPunct;
+        }
+
+        return modifiedWord;
+      });
+    }
     
     // OPTIMIZATION: Process case conversion only once
     if (caseMode !== 'normal') {
@@ -91,27 +139,6 @@ router.get("/random-text", (req, res) => {
 
     // OPTIMIZATION: Build text once instead of string concatenation
     let text = wordArray.join(' ');
-
-    // Remove trailing punctuation when not requested
-    if (!hasPunctuation) {
-      text = text.replace(/[.,!?;:—–-]+$/g, '');
-    }
-
-    // Add punctuation naturally (end of sentence)
-    if (hasPunctuation) {
-      const punctuationMarks = ['.', '!', '?'];
-      const randomPunct = punctuationMarks[Math.floor(Math.random() * 3)];
-      text += randomPunct;
-    }
-
-    // Add numbers naturally (at beginning or mixed)
-    if (hasNumbers) {
-      // OPTIMIZATION: Only add numbers if not already present
-      if (!/\d/.test(text)) {
-        const numbers = Math.floor(Math.random() * 1000);
-        text = `${numbers} ${text}`;
-      }
-    }
 
     // Calculate word count efficiently
     const finalWordCount = text.split(/\s+/).length;

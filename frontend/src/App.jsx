@@ -40,13 +40,17 @@ function AppContent() {
   )
 }
 
+import { TooltipProvider } from './components/ui/tooltip'
+
 function App() {
   return (
     <NetworkProvider>
       <AuthProvider>
         <ThemeProvider>
           <NotificationProvider>
-            <AppContent />
+            <TooltipProvider>
+              <AppContent />
+            </TooltipProvider>
           </NotificationProvider>
         </ThemeProvider>
       </AuthProvider>

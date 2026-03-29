@@ -239,11 +239,11 @@ export default function Leaderboard() {
                         value={searchQuery}
                         onChange={handleSearch}
                         onFocus={(e) => e.target.select()}
-                        className="pl-10 pr-16 h-10"
+                        className="pl-10 pr-10 sm:pr-16 h-10 w-full"
                       />
 
                       <span
-                        className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-transform duration-300 ${
+                        className={`hidden sm:inline-flex pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-transform duration-300 ${
                           showShortcutPulse ? "scale-110" : "scale-100"
                         }`}
                       >
@@ -358,21 +358,21 @@ export default function Leaderboard() {
                             </TableCell>
 
                             {/* Player Info */}
-                            <TableCell>
+                            <TableCell className="max-w-30 sm:max-w-none">
                               <div className="flex items-center gap-3">
                                 {player.profileImage ? (
                                   <img
                                     src={player.profileImage}
                                     alt={player.name}
-                                    className="w-10 h-10 rounded-full object-cover border border-border"
+                                    className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-full bg-muted border flex items-center justify-center font-semibold text-sm">
+                                  <div className="w-10 h-10 rounded-full bg-muted border flex items-center justify-center font-semibold text-sm shrink-0">
                                     {player.name.charAt(0).toUpperCase()}
                                   </div>
                                 )}
-                                <div>
-                                  <p className="font-semibold text-foreground">{player.name}</p>
+                                <div className="truncate">
+                                  <p className="font-semibold text-foreground truncate" title={player.name}>{player.name}</p>
                                   {/* <p className="text-xs text-muted-foreground">{player.email}</p> */}
                                 </div>
                               </div>
@@ -535,7 +535,8 @@ export default function Leaderboard() {
           </p>
           {searchQuery && (
             <button
-              onClick={() => {
+
+            onClick={() => {
                 setSearchQuery("");
                 setDebouncedQuery("");
               }}

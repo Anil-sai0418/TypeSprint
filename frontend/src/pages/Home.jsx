@@ -213,7 +213,6 @@ const useTypingEngine = (settings) => {
 export default function TypingTest() {
   const inputRef = useRef(null);
   const [isFocused, setIsFocused] = useState(true);
-  
   const [settings, setSettings] = useState({
     timeLimit: null, 
     wordLimit: null,
@@ -234,6 +233,36 @@ export default function TypingTest() {
   } = useTypingEngine(settings);
 
   const isToolbarLocked = status === "running" && input.length > 0;
+
+  // --- OPTIMIZATION: Toolbar Visibility & Animation State ---
+  const [isToolbarVisible, setIsToolbarVisible] = useState(false);
+  const toolbarRef = useRef(null);
+
+  useEffect(() => {
+    // Only animate when the toolbar is actually in the viewport
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsToolbarVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+
+    if (toolbarRef.current) {
+      observer.observe(toolbarRef.current);
+    }
+
+    // Also pause if the browser tab itself is hidden
+    const handleVisibilityChange = () => {
+      setIsToolbarVisible(document.visibilityState === 'visible');
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Performance Optimization: Combine conditions to decide if we should run the rotation
+  const shouldAnimateBorder = isToolbarVisible && !isToolbarLocked;
 
   // Initialize
   useEffect(() => { loadTest(); }, [loadTest]);
@@ -268,33 +297,46 @@ export default function TypingTest() {
       {/* --- Toolbar --- */}
     <div
     className={`
-     top-24 z-20 w-full flex justify-center py-6
+     top-24 z-20 w-full flex justify-center py-6 px-4
     transition-all duration-500 ease-in-out
     ${isToolbarLocked
       ? "opacity-30 -translate-y-2 pointer-events-none"
       : "opacity-100 translate-y-0"}
     `}
   >
-  <div
-    className="
-      relative
-      flex items-center  gap-6 px-10 py-3
-      rounded-2xl
-      bg-background/60
-      backdrop-blur-2xl
-      border border-border/40
-      shadow-[0_20px_60px_rgba(0,0,0,0.18)]
-      transition-all duration-300 ease-out
-      hover:shadow-[0_28px_80px_rgba(0,0,0,0.25)]
-    "
+  <div 
+    ref={toolbarRef}
+    className="relative rounded-2xl p-px overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] hover:shadow-[0_28px_80px_rgba(0,0,0,0.25)] transition-shadow duration-300 ease-out transform-gpu"
   >
-    <span className="
-      pointer-events-none absolute inset-x-6 -top-px h-px
-      bg-linear-to-r from-transparent via-border to-transparent
-    " />
+    {/* Rotating Light Element - OPTIMIZED to entirely unmount or freeze when not needed */}
+    {shouldAnimateBorder && (
+      <div 
+        className="absolute -inset-[150%] rotate-animation bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_80%,#52525b_100%)] dark:bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_80%,#a1a1aa_100%)] will-change-transform"
+        style={{
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          contain: 'strict'
+        }}
+      />
+    )}
+    
+    <div
+      className="
+        relative
+        h-full w-full
+        flex flex-wrap items-center justify-center gap-4 sm:gap-6 px-4 sm:px-10 py-3
+        rounded-[15px]
+        bg-background
+        backdrop-blur-2xl
+      "
+    >
+      <span className="
+        pointer-events-none absolute inset-x-6 -top-px h-px
+        bg-linear-to-r from-transparent via-border/50 to-transparent
+      " />
 
     {/* Group 1: Toggles */}
-  <div className="relative flex items-center  gap-2 p-1.5 rounded-xl bg-muted/30 border border-border/40">
+  <div className="relative flex items-center gap-2 p-1.5 rounded-xl bg-muted/30 border border-border/40">
     <Button
       variant="ghost"
       size="icon"
@@ -309,7 +351,7 @@ export default function TypingTest() {
         active:scale-[0.97]
       `}
     >
-      <Hash className="w-4 h-4" strokeWidth={settings.showPunctuation ? 2.5 : 2} />
+      <Type className="w-4 h-4" strokeWidth={settings.showPunctuation ? 2.5 : 2} />
     </Button>
 
     <Button
@@ -326,15 +368,15 @@ export default function TypingTest() {
         active:scale-[0.97]
       `}
     >
-      <Type className="w-4 h-4" strokeWidth={settings.showNumbers ? 2.5 : 2} />
+      <Hash className="w-4 h-4" strokeWidth={settings.showNumbers ? 2.5 : 2} />
     </Button>
   </div>
 
     {/* Divider */}
-    <div className="w-px h-6 bg-border/60 mx-2" />
+    <div className="hidden sm:block w-px h-6 bg-border/60 mx-2" />
 
     {/* Group 2: Mode Selectors */}
-    <div className="flex items-center gap-5">
+    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5">
       
       {/* Time Selector */}
       <Select
@@ -406,6 +448,7 @@ export default function TypingTest() {
         </SelectContent>
       </Select>
     </div>
+  </div>
   </div>
 </div>
 
