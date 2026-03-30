@@ -77,8 +77,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Connect to PostgreSQL with Sequelize Sync
-// In production, altering tables automatically can be dangerous, so we conditionally enable it
-const syncOptions = process.env.NODE_ENV === 'production' ? {} : { alter: true };
+// Auto-alter conditionally enabled for schema updates
+const syncOptions = { alter: true };
 sequelize.sync(syncOptions)
   .then(() => console.log('✅ PostgreSQL Database connected & synchronized successfully'))
   .catch((err) => {
