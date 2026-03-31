@@ -1,5 +1,5 @@
 /* eslint-env serviceworker */
-/* global importScripts, firebase */
+/* global importScripts, firebase, clients */
 
 // Give the service worker access to Firebase Messaging.
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
@@ -35,4 +35,31 @@ messaging.onBackgroundMessage((payload) => {
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener('notificationclick', function(event) {
+  console.log('[firebase-messaging-sw.js] Notification click received.');
+  
+  event.notification.close();
+
+  // This looks to see if the current is already open and
+  // focuses if it is
+  event.waitUntil(
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    }).then(function(clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        let client = clientList[i];
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        // For local development it might be http://localhost:5173 
+        // We can just open the origin
+        return clients.openWindow('/');
+      }
+    })
+  );
 });

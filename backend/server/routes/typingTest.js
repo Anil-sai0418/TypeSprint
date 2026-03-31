@@ -147,46 +147,78 @@ router.post("/result", verifyToken, async (req, res) => {
     }
     
     if (achChanged) {
+      // Find new achievements to notify (achievements that are in currentAchievements but not in profile.achievements)
+      const prevAchievements = Array.isArray(profile.achievements) ? profile.achievements : [];
+      const newAchievements = currentAchievements.filter(ach => !prevAchievements.includes(ach));
+      
       profile.achievements = currentAchievements;
-      profile.changed('achievements', true);
+      
+      try {
+        const admin = require('../config/firebase');
+        if (newAchievements.length > 0 && user && user.fcmToken) {
+          const message = {
+            notification: {
+              title: 'Badge Unlocked! 🏆',
+              body: `Congratulations! You unlocked the ${newAchievements.join(', ')} achievement!`,
+            },
+            token: user.fcmToken,
+          };
+          await admin.messaging().send(message);
+        }
+      } catch (err) {
+        console.error('Error sending achievement notification:', err.message);
+      }
     }
 
-    // Save profile
-    await profile.save();
-
-    // Increment contribution activity for today
     try {
-      const { getTodayDateString } = require('../utils/dateUtils');
-      const todayStr = getTodayDateString();
+      // Get rank BEFORE saving
+      const { Op } = require('sequelize');
+      const usersBefore = await UserProfile.count({
+        where: { highestSpeed: { [Op.gt]: profile.highestSpeed } }
+      });
+      const rankBefore = usersBefore + 1;
 
-      const [contribution] = await ContributionActivity.findOrCreate({
-        where: { userId: user.id, date: todayStr },
-        defaults: {
-          email,
-          activityType: 'typing_test',
-          activityCount: 0
+      await profile.save();
+
+      // Get rank AFTER saving
+      const usersAfter = await UserProfile.count({
+        where: { highestSpeed: { [Op.gt]: profile.highestSpeed } }
+      });
+      const rankAfter = usersAfter + 1;
+
+      if (rankAfter < rankBefore) {
+        try {
+          const admin = require('../config/firebase');
+          if (user && user.fcmToken) {
+            const message = {
+              notification: {
+                title: 'Leaderboard Update! 🚀',
+                body: `Awesome! You just moved up to rank #${rankAfter} on the leaderboard!`,
+              },
+              token: user.fcmToken,
+            };
+            await admin.messaging().send(message);
+          }
+        } catch (err) {
+          console.error('Error sending rank up notification:', err.message);
+        }
+      }
+
+      res.status(200).send({
+        success: true,
+        message: "Test result saved successfully",
+        stats: {
+          totalTests: profile.totalTests,
+          highestSpeed: profile.highestSpeed,
+          averageSpeed: profile.averageSpeed,
+          dailyStreak: profile.dailyStreak,
+          achievements: profile.achievements
         }
       });
-      contribution.activityCount += 1;
-      await contribution.save();
-      
-      console.log(`✅ Contribution activity incremented for ${email} on ${todayStr}`);
-    } catch (contributionErr) {
-      console.error('Error updating contribution activity:', contributionErr);
-      // Don't fail the request if contribution tracking fails
+    } catch (saveErr) {
+      console.error("Error saving profile:", saveErr);
+      res.status(500).send({ success: false, message: "Server error", error: saveErr.message });
     }
-
-    res.send({
-      success: true,
-      message: "Test result saved successfully",
-      stats: {
-        totalTests: profile.totalTests,
-        highestSpeed: profile.highestSpeed,
-        averageSpeed: profile.averageSpeed,
-        dailyStreak: profile.dailyStreak,
-        achievements: profile.achievements
-      }
-    });
   } catch (err) {
     console.error("Error saving test result:", err);
     res.status(500).send({ success: false, message: "Server error", error: err.message });

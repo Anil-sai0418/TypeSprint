@@ -86,17 +86,16 @@ export const NotificationItem = ({
   return (
     <div
       className={`
-        relative px-5 py-5 border-l-4 transition-all duration-300 ease-out
-        rounded-lg overflow-hidden group/item
-        ${!notification.read ? 'shadow-md hover:shadow-lg' : 'shadow-sm hover:shadow-md'}
-        ${notification.read ? 'border-border' : 'border-primary'}
-        ${config.color}
+        relative px-5 py-5 border transition-all duration-300 ease-out
+        rounded-2xl overflow-hidden group/item
+        ${!notification.read ? 'shadow-md shadow-primary/5 hover:shadow-lg' : 'shadow-none hover:bg-muted/30 border-transparent hover:border-border'}
+        ${!notification.read ? 'bg-card border-primary/20' : 'bg-transparent'}
       `}
     >
       <div className="flex gap-4">
         {/* Icon with animated background */}
         <div className={`shrink-0 ${config.iconColor} mt-0.5 relative`}>
-          <div className="absolute inset-0 bg-current opacity-10 rounded-full blur-md scale-150" />
+          <div className={`absolute inset-0 opacity-10 rounded-full blur-md scale-150 ${config.color.split(' ')[0]}`} />
           <Icon className="h-6 w-6 relative z-10" />
         </div>
 
@@ -104,7 +103,7 @@ export const NotificationItem = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <h3 className="font-bold text-base text-foreground leading-snug">
+              <h3 className={`font-bold text-base leading-snug ${!notification.read ? 'text-foreground' : 'text-foreground/80'}`}>
                 {config.title}
               </h3>
               <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
