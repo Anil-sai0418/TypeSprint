@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Navigation() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -77,7 +78,7 @@ export default function Navigation() {
             {!loading && !isAuthenticated ? (
               <button onClick={() => navigate("/login")} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm font-medium transition-colors">Login</button>
             ) : loading ? (
-              <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">Loading...</div>
+              <Skeleton className="h-8 md:h-10 w-16 md:w-20 rounded-md" />
             ) : (
               <div className="relative block">
                 <button 

@@ -11,14 +11,15 @@ export const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const location = useLocation();
 
-  // Still loading auth status from server
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   // User is authenticated via OAuth or has JWT token
+  // Let the component render to show its own skeleton loaders while data fetches
   if (isAuthenticated || token) {
     return children;
+  }
+
+  // Still loading auth status from server and no token available
+  if (loading) {
+    return null;
   }
 
   // Not authenticated - redirect to login
@@ -35,14 +36,14 @@ export const PublicRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const location = useLocation();
 
-  // Still loading auth status from server
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   // User is already authenticated - redirect away from login/register
   if (isAuthenticated || token) {
     return <Navigate to="/home" state={{ from: location }} replace />;
+  }
+
+  // Still loading auth status from server
+  if (loading) {
+    return children; // Allow login/register to render (they can show their own loaders if needed)
   }
 
   return children;

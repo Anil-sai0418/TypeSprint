@@ -7,7 +7,7 @@ import DetailedStats from './result/components/DetailedStats';
 import PerformanceBreakdown from './result/components/PerformanceBreakdown';
 import WpmChart from './result/components/WpmChart';
 import ActionButtons from './result/components/ActionButtons';
-import { saveTestResult } from '../services/api';
+import { saveTestResult, incrementContributionActivity } from '../services/api';
 
 export default function Result({
   testResults = null,
@@ -47,6 +47,9 @@ export default function Result({
 
       const response = await saveTestResult(payload, token);
       console.log("Test saved to backend:", response);
+
+      // Increment contribution heatmap
+      await incrementContributionActivity(email, { wpm: testData.netWpm, accuracy: testData.accuracy }, token);
     } catch (error) {
       console.error("Error saving test to backend:", error);
     }
