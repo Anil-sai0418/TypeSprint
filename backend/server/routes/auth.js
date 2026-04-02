@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
+const { sendLoginNotification } = require('../utils/emailService');
 
 const router = express.Router();
 
@@ -79,6 +80,9 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production_at_least_32_characters_long',
       { expiresIn: '7d' }
     );
+
+    // Send login notification email (without blocking the response)
+    sendLoginNotification(user.email, user.name).catch(console.error);
 
     res.send({
       success: true,
