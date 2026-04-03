@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa6";
 
 export default function ShareModal({ isOpen, onClose }) {
-  const shareUrl = window.location.origin + "/type"; // Link to the app's type page
+  const shareUrl = window.location.origin ; // Link to the app's type page
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const modalRef = useRef(null);

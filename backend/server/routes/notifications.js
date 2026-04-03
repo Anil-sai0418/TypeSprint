@@ -114,6 +114,17 @@ router.post('/register', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'FCM Token is required' });
     }
 
+    // First remove this token from any other users to prevent them from getting overlapping notifications
+    await User.update(
+      { fcmToken: null },
+      { 
+        where: { 
+          fcmToken: token,
+          id: { [Op.ne]: req.user.id }
+        } 
+      }
+    );
+
     // Update user's FCM token in database
     await User.update(
       { fcmToken: token },

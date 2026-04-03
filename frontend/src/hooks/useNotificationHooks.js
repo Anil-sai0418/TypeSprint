@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNotification } from '../context/NotificationContext';
 import { getLeaderboard, getFullUserProfile } from '../services/api';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Hook to track user activity and send inactivity reminders
 export const useActivityTracking = ({ enabled = true, userEmail } = {}) => {
@@ -52,6 +53,7 @@ export const useActivityTracking = ({ enabled = true, userEmail } = {}) => {
 export const useLeaderboardTracking = ({ enabled = true, userEmail } = {}) => {
   const { addNotification } = useNotification();
   const previousRankRef = useRef(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!enabled || !userEmail) {
@@ -62,9 +64,13 @@ export const useLeaderboardTracking = ({ enabled = true, userEmail } = {}) => {
 
     const checkRank = async () => {
       try {
-        const response = await getLeaderboard(200);
+        const response = await queryClient.fetchQuery({
+          queryKey: ['leaderboard', 200],
+          queryFn: () => getLeaderboard(200),
+          staleTime: 55 * 1000 // Only fetch network if data is older than 55 seconds. Otherwise returns cache.
+        });
         
-        if (!response.success) {
+        if (!response?.success) {
           return;
         }
 
@@ -87,18 +93,21 @@ export const useLeaderboardTracking = ({ enabled = true, userEmail } = {}) => {
           // First check - just store the rank
           previousRankRef.current = currentRank;
         } else if (previousRankRef.current !== currentRank) {
-          // Rank changed - send notification
+          // Rank changed - send notification ONLY if it's an improvement
           const rankChanged = previousRankRef.current - currentRank;
           const isImprovement = rankChanged > 0;
 
-          addNotification('leaderboard_rank_change', {
-            userId: userEmail,
-            previousRank: previousRankRef.current,
-            newRank: currentRank,
-            improvement: isImprovement,
-            positionsChanged: Math.abs(rankChanged),
-          });
+          if (isImprovement) {
+            addNotification('leaderboard_rank_change', {
+              userId: userEmail,
+              previousRank: previousRankRef.current,
+              newRank: currentRank,
+              improvement: isImprovement,
+              positionsChanged: Math.abs(rankChanged),
+            });
+          }
 
+          // Always update the ref so we don't alert on regression and don't re-alert on the next tick
           previousRankRef.current = currentRank;
         }
       } catch (error) {
@@ -113,13 +122,14 @@ export const useLeaderboardTracking = ({ enabled = true, userEmail } = {}) => {
     const checkRankInterval = setInterval(checkRank, 60 * 1000);
 
     return () => clearInterval(checkRankInterval);
-  }, [addNotification, enabled, userEmail]);
+  }, [addNotification, enabled, userEmail, queryClient]);
 };
 
 // Hook to monitor streaks
 export const useStreakTracking = ({ enabled = true, userEmail, token } = {}) => {
   const { addNotification } = useNotification();
   const previousStreakRef = useRef(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!enabled || !userEmail || !token) return; // Don't track if not logged in
@@ -129,9 +139,13 @@ export const useStreakTracking = ({ enabled = true, userEmail, token } = {}) => 
     // Check streak periodically
     const checkStreak = async () => {
       try {
-        const response = await getFullUserProfile(userEmail, token);
+        const response = await queryClient.fetchQuery({
+          queryKey: ['userProfile', userEmail],
+          queryFn: () => getFullUserProfile(userEmail, token),
+          staleTime: 5 * 60 * 1000 // 5 minutes cache
+        });
         
-        if (response.success && response.userProfile) {
+        if (response?.success && response.userProfile) {
           const currentStreak = response.userProfile?.streak || 0;
 
           if (previousStreakRef.current === null) {
@@ -165,47 +179,49 @@ export const useStreakTracking = ({ enabled = true, userEmail, token } = {}) => 
     const checkStreakInterval = setInterval(checkStreak, 3 * 60 * 1000);
 
     return () => clearInterval(checkStreakInterval);
-  }, [addNotification, enabled, userEmail, token]);
+  }, [addNotification, enabled, userEmail, token, queryClient]);
 };
 
 // Hook to monitor newly unlocked achievements
 export const useAchievementTracking = ({ enabled = true, userEmail, token } = {}) => {
   const { addNotification } = useNotification();
-  const knownAchievementsRef = useRef(null);
+  const previousAchievementsRef = useRef(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!enabled || !userEmail || !token) return;
 
-    knownAchievementsRef.current = null;
+    previousAchievementsRef.current = null;
 
     const checkAchievements = async () => {
       try {
-        const response = await getFullUserProfile(userEmail, token);
-        if (!response?.success) return;
-
-        const currentAchievements =
-          response.profile?.achievements ||
-          response.userProfile?.achievements ||
-          [];
-
-        if (!Array.isArray(currentAchievements)) return;
-
-        if (knownAchievementsRef.current === null) {
-          knownAchievementsRef.current = currentAchievements;
-          return;
-        }
-
-        const previousSet = new Set(knownAchievementsRef.current);
-        const newUnlocks = currentAchievements.filter((item) => !previousSet.has(item));
-
-        newUnlocks.forEach((achievementId) => {
-          addNotification('achievement_unlocked', {
-            userId: userEmail,
-            achievementId,
-          });
+        const response = await queryClient.fetchQuery({
+          queryKey: ['userProfile', userEmail],
+          queryFn: () => getFullUserProfile(userEmail, token),
+          staleTime: 5 * 60 * 1000 // 5 minutes cache
         });
+        
+        if (response?.success && response.userProfile?.achievements) {
+          const currentAchievements = response.userProfile.achievements;
 
-        knownAchievementsRef.current = currentAchievements;
+          if (previousAchievementsRef.current === null) {
+            // First check - just store the achievements
+            previousAchievementsRef.current = currentAchievements;
+          } else {
+            // Find new unlocks
+            const previousSet = new Set(previousAchievementsRef.current);
+            const newUnlocks = currentAchievements.filter((item) => !previousSet.has(item));
+
+            newUnlocks.forEach((achievementId) => {
+              addNotification('achievement_unlocked', {
+                userId: userEmail,
+                achievementId,
+              });
+            });
+
+            previousAchievementsRef.current = currentAchievements;
+          }
+        }
       } catch (error) {
         console.error('Error checking achievements:', error);
       }
@@ -215,5 +231,5 @@ export const useAchievementTracking = ({ enabled = true, userEmail, token } = {}
     const checkAchievementsInterval = setInterval(checkAchievements, 60 * 1000);
 
     return () => clearInterval(checkAchievementsInterval);
-  }, [addNotification, enabled, userEmail, token]);
+  }, [addNotification, enabled, userEmail, token, queryClient]);
 };

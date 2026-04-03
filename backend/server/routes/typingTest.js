@@ -57,7 +57,8 @@ router.post("/result", verifyToken, async (req, res) => {
     profile.lastTestDate = testDate;
 
     // Update highest speed
-    if (wpm > (profile.highestSpeed || 0)) {
+    const prevHighestSpeed = profile.highestSpeed || 0;
+    if (wpm > prevHighestSpeed) {
       profile.highestSpeed = wpm;
     }
 
@@ -174,7 +175,7 @@ router.post("/result", verifyToken, async (req, res) => {
       // Get rank BEFORE saving
       const { Op } = require('sequelize');
       const usersBefore = await UserProfile.count({
-        where: { highestSpeed: { [Op.gt]: profile.highestSpeed } }
+        where: { highestSpeed: { [Op.gt]: prevHighestSpeed } }
       });
       const rankBefore = usersBefore + 1;
 

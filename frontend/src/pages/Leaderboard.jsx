@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
 import { getLeaderboard } from "../services/api";
@@ -17,8 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Leaderboard() {
   const [allLeaders, setAllLeaders] = useState([]);
   const [filteredLeaders, setFilteredLeaders] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,6 +67,20 @@ export default function Leaderboard() {
   
   const itemsPerPage = 10;
 
+  const { data: qData, isLoading, error } = useQuery({
+    queryKey: ["leaderboard", 100],
+    queryFn: () => getLeaderboard(100),
+    staleTime: 60 * 1000, // 1 minute
+    retry: 1
+  });
+
+  useEffect(() => {
+    if (qData?.success) {
+      setAllLeaders(qData.leaderboard);
+      setCurrentPage(1);
+    }
+  }, [qData]);
+
   const filterLeaders = useCallback(() => {
     let filtered = allLeaders;
 
@@ -97,31 +110,11 @@ export default function Leaderboard() {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("userEmail");
     setIsLoggedIn(!!(token && email));
-    fetchLeaderboard();
   }, []);
 
   useEffect(() => {
     filterLeaders();
   }, [filterLeaders]);
-
-  const fetchLeaderboard = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await getLeaderboard(100);
-      if (response.success) {
-        setAllLeaders(response.leaderboard);
-        setCurrentPage(1);
-      } else {
-        setError(response.message || "Failed to load leaderboard");
-      }
-    } catch (err) {
-      setError("Error loading leaderboard. Make sure backend is running.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSearch = (e) => {
     const value = e.target.value;
@@ -269,9 +262,9 @@ export default function Leaderboard() {
         {/* Error State */}
         {error && !isLoading && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-6 text-center">
-            <p className="text-destructive mb-4">{error}</p>
+            <p className="text-destructive mb-4">{error.message || "Error loading leaderboard. Make sure backend is running."}</p>
             <button
-              onClick={fetchLeaderboard}
+              onClick={() => window.location.reload()}
               className="px-6 py-2 bg-destructive hover:bg-destructive/90 text-white rounded-lg font-medium transition"
             >
               Retry
