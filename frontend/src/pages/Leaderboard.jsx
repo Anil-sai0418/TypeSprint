@@ -12,10 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Leaderboard() {
+  const { t } = useTranslation();
   const [allLeaders, setAllLeaders] = useState([]);
   const [filteredLeaders, setFilteredLeaders] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -216,9 +218,9 @@ export default function Leaderboard() {
               <div className="mb-10">
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h1 className="text-4xl font-bold tracking-tight mb-1">Leaderboard</h1>
+                    <h1 className="text-4xl font-bold tracking-tight mb-1">{t('leaderboard.title')}</h1>
                     <p className="text-muted-foreground">
-                      Ranked by performance · {filteredLeaders.length} players
+                      {t('leaderboard.subtitle', { count: filteredLeaders.length })}
                     </p>
                   </div>
 
@@ -228,7 +230,7 @@ export default function Leaderboard() {
 
                       <Input
                         ref={searchInputRef}
-                        placeholder="Search player…"
+                        placeholder={t('leaderboard.search_placeholder')}
                         value={searchQuery}
                         onChange={handleSearch}
                         onFocus={(e) => e.target.select()}
@@ -301,20 +303,20 @@ export default function Leaderboard() {
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow className="border-b hover:bg-muted/50">
-                        <TableHead className="w-16 text-center font-bold">Rank</TableHead>
-                        <TableHead className="font-bold">Player</TableHead>
+                        <TableHead className="w-16 text-center font-bold">{t('leaderboard.rank')}</TableHead>
+                        <TableHead className="font-bold">{t('leaderboard.player')}</TableHead>
                         <TableHead className="text-right font-bold">
-                          Peak WPM
+                          {t('leaderboard.peak_wpm')}
                         </TableHead>
                         <TableHead className="text-right font-bold">
-                          Avg WPM
+                          {t('leaderboard.avg_wpm')}
                         </TableHead>
-                        <TableHead className="text-right font-bold">Accuracy</TableHead>
+                        <TableHead className="text-right font-bold">{t('leaderboard.accuracy')}</TableHead>
                         <TableHead className="text-right font-bold">
-                          Streak
+                          {t('leaderboard.streak')}
                         </TableHead>
                         <TableHead className="text-right font-bold">
-                          Tests
+                          {t('leaderboard.tests')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>

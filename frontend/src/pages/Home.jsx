@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
 import Result from "./Result";
+import { useTranslation } from "react-i18next";
 import { fetchRandomText } from "../services/api";
 import {
   generateWPMGraphData,
@@ -211,6 +212,7 @@ const useTypingEngine = (settings) => {
 // --- COMPONENT: Main Page ---
 
 export default function TypingTest() {
+  const { t } = useTranslation();
   const inputRef = useRef(null);
   const [isFocused, setIsFocused] = useState(true);
   const [settings, setSettings] = useState({
@@ -403,13 +405,14 @@ export default function TypingTest() {
           `}
         >
           <Clock className="w-4 h-4 text-muted-foreground" />
-          {/* If a time is set, show the number, otherwise show label 'Time' */}
-          <span className="tracking-wide">{settings.timeLimit ? `${settings.timeLimit}s` : "Time"}</span>
+          <span className="tracking-wide">
+            {settings.timeLimit ? `${settings.timeLimit}${t('home.seconds')}` : t('home.time')}
+          </span>
         </SelectTrigger>
         <SelectContent align="center" className="min-w-20">
-          <SelectItem value="15">15s</SelectItem>
-          <SelectItem value="30">30s</SelectItem>
-          <SelectItem value="60">60s</SelectItem>
+          <SelectItem value="15">15{t('home.seconds')}</SelectItem>
+          <SelectItem value="30">30{t('home.seconds')}</SelectItem>
+          <SelectItem value="60">60{t('home.seconds')}</SelectItem>
         </SelectContent>
       </Select>
 
@@ -438,13 +441,13 @@ export default function TypingTest() {
           `}
         >
           <span className="tracking-wide">
-            {settings.wordLimit ? `${settings.wordLimit}` : "Words"}
+            {settings.wordLimit ? `${settings.wordLimit}` : t('home.words')}
           </span>
         </SelectTrigger>
         <SelectContent align="center" className="min-w-20">
-          <SelectItem value="25">25 words</SelectItem>
-          <SelectItem value="50">50 words</SelectItem>
-          <SelectItem value="100">100 words</SelectItem>
+          <SelectItem value="25">25 {t('home.words_count')}</SelectItem>
+          <SelectItem value="50">50 {t('home.words_count')}</SelectItem>
+          <SelectItem value="100">100 {t('home.words_count')}</SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -529,7 +532,7 @@ export default function TypingTest() {
           {!isFocused && !isLoading && (
             <div className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer">
               <span className="bg-background/80 backdrop-blur text-muted-foreground px-4 py-2 rounded-lg text-sm font-medium border border-border shadow-lg animate-in fade-in zoom-in-95">
-                Click or Press any key to focus
+                {t('home.click_to_focus')}
               </span>
             </div>
           )}
@@ -544,12 +547,12 @@ export default function TypingTest() {
             className="group text-muted-foreground hover:text-foreground transition-all hover:bg-transparent"
           >
             <RotateCcw className="w-5 h-5 mr-2 group-hover:-rotate-180 transition-transform duration-500" />
-            <span className="group-hover:tracking-wider transition-all">Restart Test</span>
+            <span className="group-hover:tracking-wider transition-all">{t('home.restart_test')}</span>
           </Button>
         </div>
 
         <div className="absolute bottom-4 text-xs text-muted-foreground/30 font-medium">
-          TAB + ENTER to restart
+          {t('home.tab_enter_restart')}
         </div>
 
       </main>

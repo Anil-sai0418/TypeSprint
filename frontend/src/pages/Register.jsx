@@ -76,7 +76,7 @@ export default function Register() {
               transition={{ delay: 0.2 }}
               className="mx-auto w-12 h-12 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center mb-4 shadow-lg -rotate-3"
             >
-              <span className="text-2xl">🚀</span>
+             <img src="./Type-logo.png" alt="typevex-logo" />
             </motion.div>
             <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
               Create an account

@@ -10,6 +10,16 @@ import {
 import { useAuth } from '../context/useAuth';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Globe, Check } from 'lucide-react';
+
+const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', dir: 'ltr' },
+  { code: 'es', name: 'Español', dir: 'ltr' },
+  { code: 'fr', name: 'Français', dir: 'ltr' },
+  { code: 'hi', name: 'हिन्दी', dir: 'ltr' },
+  { code: 'ar', name: 'العربية', dir: 'rtl' }
+];
 
 function Footer({ isLoggedIn = false }) {
   const { user } = useAuth();
@@ -23,9 +33,29 @@ function Footer({ isLoggedIn = false }) {
   const [loading, setLoading] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(true);
   const [showToast, setShowToast] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+
+  const { t, i18n } = useTranslation();
+
+  const changeLanguage = (lang) => {
+    if (i18n && i18n.changeLanguage) {
+      i18n.changeLanguage(lang.code);
+    }
+    document.documentElement.dir = lang.dir;
+    document.documentElement.lang = lang.code;
+    localStorage.setItem('i18nextLng', lang.code);
+    setLangMenuOpen(false);
+  };
+
+  const currentLangCode = i18n?.language?.split('-')[0] || localStorage.getItem('i18nextLng') || 'en';
+  const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === currentLangCode) || SUPPORTED_LANGUAGES[0];
 
   // Fetch like status and count
   useEffect(() => {
+    // Sync document direction with initialized language when mounted or when language changes
+    document.documentElement.dir = i18n.dir();
+    document.documentElement.lang = i18n.language || 'en';
+
     const fetchLikeData = async () => {
       setIsLikeLoading(true);
       try {
@@ -55,7 +85,7 @@ function Footer({ isLoggedIn = false }) {
     };
 
     fetchLikeData();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, i18n]);
 
   // Connection status tracking
   useEffect(() => {
@@ -226,11 +256,11 @@ function Footer({ isLoggedIn = false }) {
           
           {/* ABOUT Column */}
           <div className="md:col-span-1 space-y-6">
-            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">ABOUT</h3>
+            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">{t('footer.about')}</h3>
             
             <div className="flex gap-4">
               <div className="shrink-0 w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-lg shadow-sm">
-                ⌨️
+<img src="./Type-logo.png" alt="Type-logo" />
               </div>
               <p className="text-sm text-zinc-500 leading-relaxed font-medium">
                 A clean and minimal typing practice application designed to improve
@@ -242,18 +272,18 @@ function Footer({ isLoggedIn = false }) {
 
           {/* SITEMAP Column */}
           <div className="space-y-6">
-            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">SITEMAP</h3>
+            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">{t('footer.sitemap')}</h3>
             <ul className="space-y-3 text-sm font-medium text-zinc-500">
-              <li><Link to="/" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group"><span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>Home</Link></li>
-              <li><Link to="/home" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group"><span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>Type</Link></li>
-              <li><Link to="/leaderboard" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group"><span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>Leaderboard</Link></li>
+              <li><Link to="/" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group"><span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>{t('footer.home')}</Link></li>
+              <li><Link to="/home" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group"><span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>{t('footer.type')}</Link></li>
+              <li><Link to="/leaderboard" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group"><span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>{t('footer.leaderboard')}</Link></li>
             </ul>
           </div>
 
           {/* CONTACT Column */}
           <div className="space-y-6">
-            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">CONTACT</h3>
-            <ul className="space-y-3 text-sm font-medium text-zinc-500">
+            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">{t('footer.contact')}</h3>
+            <ul className="space-y-3 text-sm font-medium text-zinc-500 mb-6">
               <li>
                 <a href="mailto:anilsainunna@gmail.com" className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors flex items-center gap-2 group">
                   <span className="w-1 h-1 bg-zinc-300 rounded-full group-hover:bg-zinc-900 dark:group-hover:bg-zinc-100 transition-colors"></span>
@@ -267,11 +297,61 @@ function Footer({ isLoggedIn = false }) {
                 </a>
               </li>
             </ul>
+
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+              <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase mb-4">{t('footer.language')}</h3>
+              <div className="relative inline-block text-left w-full max-w-50">
+                <button
+                  onClick={() => setLangMenuOpen(!langMenuOpen)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-300 border border-zinc-200 dark:border-zinc-800
+                               bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 
+                               focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                  aria-label="Change language"
+                  aria-expanded={langMenuOpen}
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                      {currentLang.name}
+                    </span>
+                  </div>
+                  <svg className={`w-4 h-4 text-zinc-400 transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {langMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)}></div>
+                    <div 
+                      className="absolute bottom-full left-0 mb-2 w-full max-h-64 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black shadow-xl animate-in fade-in zoom-in-95 duration-200 z-60"
+                      role="menu"
+                    >
+                      <div className="py-2 text-sm z-50">
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <button
+                            key={lang.code}
+                            onClick={() => changeLanguage(lang)}
+                            className={`w-full flex items-center justify-between px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:bg-zinc-100 dark:focus:bg-zinc-900 focus:outline-none transition-colors ${
+                              currentLangCode === lang.code ? "bg-zinc-50 dark:bg-zinc-900/50 font-bold text-emerald-600 dark:text-emerald-500" : "text-zinc-700 dark:text-zinc-300"
+                            }`}
+                            role="menuitem"
+                          >
+                            <span className="truncate normal-case text-start">{lang.name}</span>
+                            {currentLangCode === lang.code && <Check className="h-4 w-4 shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* STATUS Column */}
           <div className="space-y-6">
-            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">STATUS</h3>
+            <h3 className="text-xs font-bold text-zinc-600 dark:text-zinc-500 tracking-widest uppercase">{t('footer.status')}</h3>
             <div className="bg-white dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm space-y-5">
                 
     {/* Connection Status */}
@@ -372,14 +452,14 @@ function Footer({ isLoggedIn = false }) {
 
       
       {/* Bottom Section */}
-      <div className="border-t border-zinc-200 dark:border-zinc-800">
+      <div className="relative z-20 border-t border-zinc-200 dark:border-zinc-800">
          <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center text-[0.65rem] font-bold text-zinc-400 uppercase tracking-wider">
           <p>© {new Date().getFullYear()} TypeVex. All rights reserved.</p>
           
           <div className="relative mt-4 md:mt-0 flex gap-4 items-center">
             
             <span className="text-zinc-500">
-              Developed by 
+              {t('footer.developed_by')} 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <a

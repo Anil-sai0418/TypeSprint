@@ -7,6 +7,7 @@ import { useAuth } from "../../context/useAuth";
 import BreadcrumbNav from "../BreadcrumbNav";
 import { useNotification } from "../../context/NotificationContext";
 import { AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import ShareModal from "../share/Share";
 import {
   AlertDialog,
@@ -21,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Navigation() {
+  const { t } = useTranslation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -40,7 +42,9 @@ export default function Navigation() {
     }
 
     function handleEsc(e) {
-      if (e.key === "Escape") setUserMenuOpen(false);
+      if (e.key === "Escape") {
+        setUserMenuOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -61,22 +65,30 @@ export default function Navigation() {
     <>
       <nav className="fixed top-0 left-0 w-full z-50 border-b border-border/40 bg-transparent backdrop-blur-sm text-foreground">
         <div className="h-16 px-3 sm:px-6 flex items-center justify-between">
-          <div onClick={() => navigate("/")} className="flex items-center gap-1 sm:gap-2 cursor-pointer select-none shrink-0">
-            <img src="/Type-logo.png" alt="TypeSprint logo" className="h-14 w-14 sm:h-16 sm:w-16 object-contain" />
-            <span className="hidden sm:inline text-base sm:text-lg font-bold tracking-tight">
-              <span className="text-blue-500">Type</span>
-              <span className="text-green-500 ml-1">vex</span>
+          <div onClick={() => navigate("/")} className="ml-2 sm:ml-10 flex items-center gap-1 sm:gap-2 cursor-pointer select-none shrink-0">
+            <img src="/Type-logo.png" alt="TypeSprint logo" className="h-10 w-10 sm:h-10 sm:w-10 object-contain" />
+            <span className="hidden sm:inline text-base sm:text-lg font-bold tracking-tight text-foreground">
+              Typevex
             </span>
            
           </div>
 
           <div className="flex items-center gap-3 sm:gap-7">
-            <div className="flex items-center gap-3 sm:gap-7">
+            <div className="flex items-center gap-2 sm:gap-4">
               <ThemeToggle />
             </div>
 
             {!loading && !isAuthenticated ? (
-              <button onClick={() => navigate("/login")} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm font-medium transition-colors">Login</button>
+              <button 
+                onClick={() => navigate("/login")} 
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg 
+                           bg-black text-white 
+                           dark:bg-violet-600 dark:text-white 
+                           hover:bg-gray-800 dark:hover:bg-violet-500 
+                           text-xs sm:text-sm font-medium transition-colors"
+              >
+                {t('nav.login')}
+              </button>
             ) : loading ? (
               <Skeleton className="h-8 md:h-10 w-16 md:w-20 rounded-md" />
             ) : (
@@ -119,30 +131,34 @@ export default function Navigation() {
                     <div className="px-4 py-3 border-b border-border">
                       <p className="text-sm font-medium">{user?.name || "User"}</p>
                       <p className="text-xs text-muted-foreground truncate">{user?.email || ""}</p>
-                      {user?.provider && <p className="text-xs text-green-500 mt-1">Connected via {user.provider}</p>}
+                      {user?.provider && <p className="text-xs text-green-500 mt-1">{t('nav.connected_via')} {user.provider}</p>}
                     </div>
                     <div className="py-2 text-sm">
-                      <button onClick={() => { setUserMenuOpen(false); navigate("/profile"); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors">
+                      <button onClick={() => { setUserMenuOpen(false); navigate("/profile"); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-co
+lors">
                         <User className="h-4 w-4" />
-                        User Details
+                        {t('nav.user_details')}
                       </button>
-                      <button onClick={() => { setUserMenuOpen(false); navigate("/notifications"); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors">
+                      <button onClick={() => { setUserMenuOpen(false); navigate("/notifications"); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transit
+ion-colors">
                         <div className="relative flex">
                           <Bell className="h-4 w-4" />
                           {unreadCount > 0 && <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border border-background"></span>}
                         </div>
-                        Notifications
+                        {t('nav.notifications')}
                         {unreadCount > 0 && <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                       </button>
-                      <button onClick={() => { setUserMenuOpen(false); setShareModalOpen(true); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors">
+                      <button onClick={() => { setUserMenuOpen(false); setShareModalOpen(true); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition
+-colors">
                         <Share2 className="h-4 w-4" />
-                        Share this app
+                        {t('nav.share_app')}
                       </button>
                     </div>
                     <div className="border-t border-border">
-                      <button onClick={(e) => { e.preventDefault(); setShowLogoutDialog(true); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 focus:bg-red-500/10 transition-colors">
+                      <button onClick={(e) => { e.preventDefault(); setShowLogoutDialog(true); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-500/10 foc
+us:bg-red-500/10 transition-colors">
                         <LogOut className="h-4 w-4" />
-                        Log out
+                        {t('nav.logout')}
                       </button>
                     </div>
                   </div>
@@ -166,15 +182,15 @@ export default function Navigation() {
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogTitle>{t('nav.logout_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to logout from the account "{user?.name || "User"}". You will need to login again to access your profile.
+              {t('nav.logout_confirm_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('nav.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Logout
+              {t('nav.logout')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
