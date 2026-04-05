@@ -51,6 +51,17 @@ const useTypingEngine = (settings) => {
     }
   }, [settings]);
 
+  const retype = useCallback(() => {
+    setStatus("idle");
+    setWpmHistory([]);
+    setInput("");
+    setStartTime(null);
+    setEndTime(null);
+    keystrokesRef.current = [];
+    statsRef.current = { totalCorrect: 0, totalError: 0 };
+    // We intentionally don't clear or change the `words` state here
+  }, []);
+
   // OPTIMIZATION: Efficient timer with early exit
   useEffect(() => {
     if (status !== "running" || !settings.timeLimit) return;
@@ -205,7 +216,9 @@ const useTypingEngine = (settings) => {
     wpmHistory,
     loadTest,
     handleInput,
-    restart: loadTest
+    restart: loadTest,
+    retype,
+    keystrokes: keystrokesRef.current
   };
 };
 
@@ -231,14 +244,20 @@ export default function TypingTest() {
     wpmHistory, 
     loadTest, 
     handleInput, 
-    restart 
+    restart,
+    retype,
+    keystrokes
   } = useTypingEngine(settings);
 
   const isToolbarLocked = status === "running" && input.length > 0;
 
   // --- OPTIMIZATION: Toolbar Visibility & Animation State ---
   const [isToolbarVisible, setIsToolbarVisible] = useState(false);
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [replayInput, setReplayInput] = useState("");
   const toolbarRef = useRef(null);
+  
+  const displayInput = isReplaying ? replayInput : input;
 
   useEffect(() => {
     // Only animate when the toolbar is actually in the viewport
@@ -247,14 +266,9 @@ export default function TypingTest() {
       { threshold: 0.1 }
     );
 
-    if (toolbarRef.current) {
-      observer.observe(toolbarRef.current);
-    }
+    if (toolbarRef.current) observer.observe(toolbarRef.current);
 
-    // Also pause if the browser tab itself is hidden
-    const handleVisibilityChange = () => {
-      setIsToolbarVisible(document.visibilityState === 'visible');
-    };
+    const handleVisibilityChange = () => setIsToolbarVisible(document.visibilityState === 'visible');
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
@@ -263,8 +277,56 @@ export default function TypingTest() {
     };
   }, []);
 
-  // Performance Optimization: Combine conditions to decide if we should run the rotation
   const shouldAnimateBorder = isToolbarVisible && !isToolbarLocked;
+
+  // Replay Logic
+  useEffect(() => {
+    let timeoutId;
+    if (isReplaying && keystrokes && keystrokes.length > 0) {
+      const runReplay = async () => {
+        let currentString = "";
+        
+        for (let i = 0; i < keystrokes.length; i++) {
+          if (!isReplaying) break; // Check if stopped
+          
+          const stroke = keystrokes[i];
+          let delay = (i === 0) ? 0 : (stroke.timestamp - keystrokes[i-1].timestamp);
+          
+          // Cap the delay to a maximum of 1.5 seconds to keep the replay engaging
+          delay = Math.min(delay, 1500);
+          
+          if (delay > 0) {
+            await new Promise(resolve => {
+              timeoutId = setTimeout(resolve, delay);
+            });
+          }
+          
+          if (!isReplaying) break;
+
+          if (stroke.isBackspace) {
+            currentString = currentString.slice(0, -1);
+          } else {
+            currentString += stroke.typedCharacter || ""; // Use the correct property typedCharacter
+          }
+          setReplayInput(currentString);
+        }
+        
+        // Wait a small moment then return to result
+        if (isReplaying) {
+          timeoutId = setTimeout(() => setIsReplaying(false), 1500);
+        }
+      };
+      
+      runReplay();
+      
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+      };
+    } else if (isReplaying) {
+      // Nothing to replay, go back
+      setIsReplaying(false);
+    }
+  }, [isReplaying, keystrokes]);
 
   // Initialize
   useEffect(() => { loadTest(); }, [loadTest]);
@@ -278,7 +340,7 @@ export default function TypingTest() {
     return () => window.removeEventListener('click', focusInput);
   }, [isLoading, status]);
 
-  if (status === "completed") {
+  if (status === "completed" && !isReplaying) {
     return (
       <Result 
         testResults={{
@@ -286,8 +348,11 @@ export default function TypingTest() {
           timeTarget: settings.timeLimit,
           wpmHistory
         }}
-        onTryAgain={restart}
+        onTryAgain={retype}
         onNewTest={restart}
+        onSettings={() => {}}
+        onLeaderboard={() => {}}
+        onReplay={() => setIsReplaying(true)}
       />
     );
   }
@@ -482,18 +547,25 @@ export default function TypingTest() {
           )}
 
           {/* Actual Text */}
+          {isReplaying && (
+            <div className="absolute -top-12 left-0 right-0 flex justify-center z-50">
+              <Button onClick={() => setIsReplaying(false)} variant="destructive" size="sm">
+                Stop Replay
+              </Button>
+            </div>
+          )}
           {!isLoading && (
-            <div className={`wrap-break-word select-none transition-opacity duration-200 ${!isFocused ? "blur-sm opacity-50" : "opacity-100"}`}>
+            <div className={`wrap-break-word select-none transition-opacity duration-200 ${!isFocused && !isReplaying ? "blur-sm opacity-50" : "opacity-100"}`}>
               {words.map((char, i) => {
-                const isCurrent = i === input.length;
-                const isTyped = i < input.length;
-                const isCorrect = isTyped && input[i] === char;
-                const isWrong = isTyped && input[i] !== char;
+                const isCurrent = i === displayInput.length;
+                const isTyped = i < displayInput.length;
+                const isCorrect = isTyped && displayInput[i] === char;
+                const isWrong = isTyped && displayInput[i] !== char;
 
                 return (
                   <span key={i} className="relative">
                     {/* The Cursor */}
-                    {isCurrent && isFocused && (
+                    {isCurrent && (isFocused || isReplaying) && (
                       <span className="absolute -left-0.5 top-1 bottom-1 w-0.5 bg-primary animate-pulse rounded-full" />
                     )}
                     
@@ -514,22 +586,24 @@ export default function TypingTest() {
           )}
 
           {/* Hidden Input */}
-          <input
-            ref={inputRef}
-            type="text"
-            className="absolute opacity-0 top-0 left-0 h-full w-full cursor-default"
-            value={input}
-            onChange={(e) => handleInput(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-          />
+          {!isReplaying && (
+            <input
+              ref={inputRef}
+              type="text"
+              className="absolute opacity-0 top-0 left-0 h-full w-full cursor-default"
+              value={input}
+              onChange={(e) => handleInput(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+            />
+          )}
 
           {/* Focus Overlay */}
-          {!isFocused && !isLoading && (
+          {!isFocused && !isLoading && !isReplaying && (
             <div className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer">
               <span className="bg-background/80 backdrop-blur text-muted-foreground px-4 py-2 rounded-lg text-sm font-medium border border-border shadow-lg animate-in fade-in zoom-in-95">
                 {t('home.click_to_focus')}

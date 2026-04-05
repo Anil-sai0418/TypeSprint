@@ -1,9 +1,9 @@
 import React from 'react';
-import { RotateCcw, Plus, Trophy } from 'lucide-react';
+import { RotateCcw, Plus, Trophy, PlayCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-export default function ActionButtons({ onTryAgain, onNewTest }) {
+export default function ActionButtons({ onTryAgain, onNewTest, onReplay }) {
   const navigate = useNavigate();
 
   return (
@@ -26,12 +26,20 @@ export default function ActionButtons({ onTryAgain, onNewTest }) {
           index={1}
         />
         <ActionButton
+          icon={PlayCircle}
+          label="Watch Replay"
+          description="See your typing"
+          onClick={onReplay}
+          color="amber"
+          index={2}
+        />
+        <ActionButton
           icon={Trophy}
           label="Leaderboard"
           description="See rankings"
           onClick={() => navigate('/leaderboard')}
           color="amber"
-          index={2}
+          index={3}
         />
       </div>
     </div>

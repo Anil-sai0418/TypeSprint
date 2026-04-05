@@ -14,10 +14,31 @@ export default function Result({
   onTryAgain = () => {},
   onNewTest = () => {},
   onSettings = () => {},
-  onLeaderboard = () => {}
+  onLeaderboard = () => {},
+  onReplay = () => {}
 }) {
   const [results, setResults] = useState(null);
   const [showChart, setShowChart] = useState(true);
+
+  // Global Keybindings for Results page
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger if user is typing in an input (though there shouldn't be here)
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        onNewTest();
+      } else if (e.key.toLowerCase() === 'r') {
+        onTryAgain();
+      } else if (e.key.toLowerCase() === 'w') {
+        onReplay();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onNewTest, onTryAgain, onReplay]);
 
   useEffect(() => {
     if (testResults) {
@@ -97,6 +118,7 @@ export default function Result({
           onNewTest={onNewTest}
           onSettings={onSettings}
           onLeaderboard={onLeaderboard}
+          onReplay={onReplay}
         />
       </main>
 
