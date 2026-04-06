@@ -13,6 +13,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { register } from "../services/api";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -36,13 +37,14 @@ export default function Register() {
     try {
       const data = await register(formData.name, formData.email, formData.password);
       if (data.success) {
+        toast.success("Registration successful!");
         navigate("/login");
       } else {
-        alert(`Registration failed: ${data.message}`);
+        toast.error(`Registration failed: ${data.message}`);
       }
     } catch (err) {
       console.error("Error:", err);
-      alert(`Registration failed: ${err.message}`);
+      toast.error(`Registration failed: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

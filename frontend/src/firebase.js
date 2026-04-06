@@ -23,16 +23,14 @@ export const requestForToken = () => {
   return getToken(messaging, { vapidKey: "BBMeh1fk3Y2BAHl6EqYAk-Uv8e4y990-GIBj-mv_VcZexUfa7f17R4EQ7mCnWB2TFUpR5CKFr9hUlnpcf4egp54" })
     .then((currentToken) => {
       if (currentToken) {
-        console.log('Got FCM device token:', currentToken);
         // You would normally send this token to your server here
         return currentToken;
       } else {
         // Show permission request UI
-        console.log('No registration token available. Request permission to generate one.');
         return null;
       }
     }).catch((err) => {
-      console.log('An error occurred while retrieving token. ', err);
+      console.error('An error occurred while retrieving token. ', err);
       return null;
     });
 };

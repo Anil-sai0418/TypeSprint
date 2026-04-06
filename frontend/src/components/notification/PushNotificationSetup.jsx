@@ -16,11 +16,9 @@ const PushNotificationSetup = () => {
       // Request permission and get token
       requestForToken().then(async (token) => {
         if (token) {
-           console.log("Token generated:", token);
            // Send the token to the backend
            try {
              await registerDeviceToken(token, storedToken);
-             console.log("Token registered successfully");
            } catch (error) {
              console.error("Error registering token:", error);
            }

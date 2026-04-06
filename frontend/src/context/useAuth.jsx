@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import { login as apiLogin, register as apiRegister, getFullUserProfile } from "../services/api";
+import { toast } from "sonner";
 
 const AuthContext = createContext();
 
@@ -74,6 +75,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("userEmail");
         setIsAuthenticated(false);
         setUser(null);
+        toast.info("Successfully logged out!");
     };
 
     return (

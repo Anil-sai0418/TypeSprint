@@ -12,6 +12,7 @@ import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Globe, Check } from 'lucide-react';
+import { toast } from "sonner";
 
 const SUPPORTED_LANGUAGES = [
   { code: 'en', name: 'English', dir: 'ltr' },
@@ -143,7 +144,7 @@ function Footer({ isLoggedIn = false }) {
   // Handle like toggle
   const handleLikeClick = async () => {
     if (!isLoggedIn) {
-      alert("Please login to like this application");
+      toast.error("Please login to like this application");
       return;
     }
 
@@ -190,7 +191,7 @@ function Footer({ isLoggedIn = false }) {
       }
     } catch (error) {
       console.error("Error toggling like:", error);
-      alert("Error updating like status");
+      toast.error("Error updating like status");
     } finally {
       setLoading(false);
     }

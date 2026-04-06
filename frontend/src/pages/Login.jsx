@@ -13,6 +13,7 @@ import { useState } from "react"
 import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from "../context/useAuth";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -31,19 +32,20 @@ export default function Login() {
     try {
       const data = await login(formData.email, formData.password);
       if (data.success) {
+        toast.success("Successfully logged in!");
         navigate("/home");
       } else {
-        alert("Login failed: " + data.message);
+        toast.error("Login failed: " + data.message);
       }
     } catch (err) {
       console.error("Error:", err);
       const errorMsg = err.message ? err.message.toLowerCase() : "unknown error";
       if (errorMsg.includes("invalid email")) {
-        alert("Invalid email address. Please try again.");
+        toast.error("Invalid email address. Please try again.");
       } else if (errorMsg.includes("incorrect password")) {
-        alert("Incorrect password. Please try again.");
+        toast.error("Incorrect password. Please try again.");
       } else {
-        alert("Login failed: " + (err.message || "Unknown error"));
+        toast.error("Login failed: " + (err.message || "Unknown error"));
       }
     } finally {
       setIsLoading(false);

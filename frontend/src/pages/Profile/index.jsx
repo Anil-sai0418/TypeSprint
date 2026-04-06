@@ -15,10 +15,27 @@ import EditProfileForm from "./components/EditProfileForm";
 import TypingStatsOverview from "./components/TypingStatsOverview";
 import ActivityJourney from "./components/ActivityJourney";
 import ImageCropperModal from "./components/ImageCropperModal";
+import { Dialog, DialogContent, DialogOverlay, DialogTitle, DialogDescription } from "../../components/ui/dialog";
+
+// Simple custom hook for media queries
+function useMediaQuery(query) {
+  const [matches, setMatches] = React.useState(false);
+  React.useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = () => setMatches(media.matches);
+    window.addEventListener("resize", listener);
+    return () => window.removeEventListener("resize", listener);
+  }, [matches, query]);
+  return matches;
+}
 
 function Profile() {
   const { theme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const {
     userProfile,
@@ -231,7 +248,7 @@ function Profile() {
           <div className="lg:col-span-2 space-y-8">
             {/* Conditional Rendering: Edit Form or Stats Summary */}
             <AnimatePresence mode="wait">
-              {isEditing ? (
+              {isEditing && isDesktop ? (
                 <EditProfileForm
                   editData={editData}
                   setEditData={setEditData}
@@ -250,6 +267,24 @@ function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Edit Profile Modal */}
+      {!isDesktop && isEditing && (
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-0 border-none bg-transparent shadow-none rounded-3xl!">
+            <DialogTitle className="sr-only">Edit Profile</DialogTitle>
+            <DialogDescription className="sr-only">Make changes to your user profile</DialogDescription>
+            <EditProfileForm
+              editData={editData}
+              setEditData={setEditData}
+              imagePreview={imagePreview}
+              handleImageChange={handleImageChange}
+              handleSaveProfile={saveProfile}
+              setIsEditing={setIsEditing}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Image Adjust Modal */}
       {isCropping && (
