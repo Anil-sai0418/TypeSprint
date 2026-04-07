@@ -82,7 +82,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Connect to PostgreSQL with Sequelize Sync is handled near bottom
-const syncOptions = { alter: true };
+const syncOptions = { alter: { drop: false } };
 
 
 // Routes
