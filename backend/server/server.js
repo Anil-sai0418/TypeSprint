@@ -76,18 +76,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Connect to PostgreSQL with Sequelize Sync
-// Auto-alter conditionally enabled for schema updates
+// Connect to PostgreSQL with Sequelize Sync is handled near bottom
 const syncOptions = { alter: true };
-sequelize.sync(syncOptions)
-  .then(() => console.log('✅ PostgreSQL Database connected & synchronized successfully'))
-  .catch((err) => {
-    console.error('❌ SQL Database sync error:', err);
-    if (process.env.NODE_ENV === 'production') {
-      console.error('Shutting down server due to DB connection failure...');
-      process.exit(1);
-    }
-  });
+
 
 // Routes
 app.use("/auth", require('./routes/auth'));
@@ -135,39 +126,61 @@ const numCPUs = os.cpus().length;
 
 if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
   console.log(`\n🚀 Master ${process.pid} is running`);
-  console.log(`⚙️ Scaling across ${numCPUs} CPU cores...\n`);
+  
+  // Master process syncs the database ONCE to prevent race conditions during alter
+  sequelize.sync(syncOptions).then(() => {
+    console.log('✅ PostgreSQL Database connected & synchronized (Master)');
+    console.log(`⚙️ Scaling across ${numCPUs} CPU cores...\n`);
+    for (let i = 0; i < numCPUs; i++) {
+      cluster.fork();
+    }
+  }).catch(err => {
+    console.error('❌ SQL Master Database sync error:', err);
+    process.exit(1);
+  });
 
-  // Fork workers.
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
-  }
-
-  // Restart workers if they die
   cluster.on('exit', (worker, code, signal) => {
     console.log(`⚠️ Worker ${worker.process.pid} died. Restarting...`);
     cluster.fork();
   });
 } else {
-  const server = app.listen(PORT, () => {
-    if (process.env.NODE_ENV !== 'production' || !cluster.isMaster) {
-      console.log(`\n🚀 Server is live in ${process.env.NODE_ENV || 'development'} mode (Worker ${process.pid})`);
-      console.log(`📍 URL: http://localhost:${PORT}/`);
-      console.log(`📦 Node Version: ${process.version}`);
-    }
-  });
+  // Worker process or development mode
+  const startServer = () => {
+    const server = app.listen(PORT, () => {
+      if (process.env.NODE_ENV !== 'production' || !cluster.isMaster) {
+        console.log(`\n🚀 Server is live in ${process.env.NODE_ENV || 'development'} mode (Worker ${process.pid})`);
+        console.log(`📍 URL: http://localhost:${PORT}/`);
+        console.log(`📦 Node Version: ${process.version}`);
+      }
+    });
 
-  // Graceful Shutdown
-  process.on('SIGTERM', () => {
-    console.info('SIGTERM signal received.');
-    console.log('Closing HTTP server.');
-    server.close(() => {
-      console.log('HTTP server closed.');
-      sequelize.close().then(() => {
-        console.log('Sequelize connection closed.');
-        process.exit(0);
+    process.on('SIGTERM', () => {
+      console.info('SIGTERM signal received.');
+      server.close(() => {
+        sequelize.close().then(() => {
+          process.exit(0);
+        });
       });
     });
-  });
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    // In development mode (not a cluster), sync the DB
+    sequelize.sync(syncOptions).then(() => {
+      console.log('✅ PostgreSQL Database connected & synchronized (Dev)');
+      startServer();
+    }).catch(err => {
+      console.error('❌ SQL Database sync error:', err);
+    });
+  } else {
+    // Production workers just connect (no sync, master handled it)
+    sequelize.authenticate().then(() => {
+      startServer();
+    }).catch(err => {
+      console.error('❌ SQL Database connection error in Worker:', err);
+      process.exit(1);
+    });
+  }
 }
 
 module.exports = app;
