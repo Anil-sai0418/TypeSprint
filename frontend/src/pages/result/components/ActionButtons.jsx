@@ -61,7 +61,7 @@ const ActionButton = ({ icon: IconComp, label, description, onClick, color, inde
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="group relative flex items-center gap-5 rounded-3xl px-6 py-5 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 transition-all duration-300 shadow-sm text-left w-full sm:w-auto min-w-65"
+      className="group relative z-10 flex items-center gap-5 rounded-3xl px-6 py-5 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 transition-all duration-300 shadow-sm text-left w-full sm:flex-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 transition-all duration-300">
         <IconComp className={`h-6 w-6 transition-colors duration-300 ${colors[color].split(" ")[0]}`} />

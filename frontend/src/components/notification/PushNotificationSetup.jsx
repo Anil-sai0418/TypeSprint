@@ -60,8 +60,8 @@ const PushNotificationSetup = () => {
   };
 
   useEffect(() => {
-    // Listen for foreground notifications
-    onMessageListener().then((payload) => {
+    // Listen for foreground notifications continuously
+    const unsubscribe = onMessageListener((payload) => {
       console.log('Received foreground message:', payload);
       
       // Show beautiful styled in-app toast
@@ -76,7 +76,11 @@ const PushNotificationSetup = () => {
         };
         new Notification(notificationTitle, notificationOptions);
       }
-    }).catch((err) => console.log('failed mapping notification listener: ', err));
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   return (

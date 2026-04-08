@@ -1,14 +1,28 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+const createTransporter = () => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn('⚠️ EMAIL_USER or EMAIL_PASS not found in environment variables. Emails will not be sent.');
+        return null;
     }
-});
+    
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+};
+
+const transporter = createTransporter();
 
 const sendLoginNotification = async (userEmail, userName) => {
+    if (!transporter) {
+        console.log(`Skipping login email to ${userEmail} (email service not configured)`);
+        return false;
+    }
+
     try {
         const timestamp = new Date().toLocaleString();
         

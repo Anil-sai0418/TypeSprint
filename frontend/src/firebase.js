@@ -36,11 +36,10 @@ export const requestForToken = () => {
 };
 
 // Setup listener for foreground messages
-export const onMessageListener = () =>
-  new Promise((resolve) => {
-    onMessage(messaging, (payload) => {
-      resolve(payload);
-    });
+export const onMessageListener = (callback) => {
+  return onMessage(messaging, (payload) => {
+    callback(payload);
   });
+};
 
 export { messaging };

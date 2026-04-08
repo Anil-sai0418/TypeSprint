@@ -190,6 +190,8 @@ router.post("/result", verifyToken, async (req, res) => {
       if (rankAfter < rankBefore) {
         try {
           const admin = require('../config/firebase');
+          
+          // 1. Notify the current user of their rank up
           if (user && user.fcmToken) {
             const message = {
               notification: {
@@ -198,10 +200,54 @@ router.post("/result", verifyToken, async (req, res) => {
               },
               token: user.fcmToken,
             };
-            await admin.messaging().send(message);
+            admin.messaging().send(message).catch(e => console.error('Error sending self rank up notification:', e.message));
+          }
+
+          // 2. Notify users who were overtaken (dropped rank due to this new score passing them)
+          // We limit to the closest 20 competitors to avoid notification spam if jumping hundreds of ranks.
+          const overtakenLimit = Math.max(prevHighestSpeed || 1, 1);
+          const overtakenProfiles = await UserProfile.findAll({
+            where: {
+              highestSpeed: {
+                [Op.gte]: overtakenLimit,
+                [Op.lt]: profile.highestSpeed
+              },
+              userId: {
+                [Op.ne]: user.id
+              }
+            },
+            include: [{
+              model: User,
+              // Uses default association alias (model name) User
+              attributes: ['fcmToken'],
+              required: true,
+              where: {
+                fcmToken: { [Op.not]: null }
+              }
+            }],
+            order: [['highestSpeed', 'DESC']],
+            limit: 20
+          });
+
+          if (overtakenProfiles.length > 0) {
+            const tokensToNotify = overtakenProfiles
+              .map(p => p.User ? p.User.fcmToken : null)
+              .filter(t => t);
+
+            if (tokensToNotify.length > 0) {
+              const multicastMessage = {
+                notification: {
+                  title: 'You were overtaken! 📉',
+                  body: `${user.name} just beat your high score with ${profile.highestSpeed} WPM! Defend your rank!`,
+                },
+                tokens: tokensToNotify,
+              };
+              
+              admin.messaging().sendMulticast(multicastMessage).catch(e => console.error('Error sending overtaken multicast push:', e.message));
+            }
           }
         } catch (err) {
-          console.error('Error sending rank up notification:', err.message);
+          console.error('Error sending rank up notifications:', err.message);
         }
       }
 
