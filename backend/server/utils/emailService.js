@@ -10,14 +10,23 @@ const createTransporter = () => {
         host: 'smtp.gmail.com',
         port: 465,
         secure: true, // use SSL
+        // Force IPv4 exactly because Render free-tier drops Google IPv6 connections
+        // which causes the "ENETUNREACH 2404:6800..." error
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
+        },
+        tls: {
+            rejectUnauthorized: false
         }
     });
 };
 
 const transporter = createTransporter();
+
+// Overwrite the Node DNS behavior to force IPv4
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 
 const sendLoginNotification = async (userEmail, userName) => {
     if (!transporter) {
