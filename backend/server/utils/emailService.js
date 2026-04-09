@@ -8,8 +8,8 @@ const createTransporter = () => {
     
     return nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // use SSL
+        port: 587,
+        secure: false, // true for 465, false for other ports (587 uses STARTTLS)
         // Force IPv4 exactly because Render free-tier drops Google IPv6 connections
         // which causes the "ENETUNREACH 2404:6800..." error
         auth: {
