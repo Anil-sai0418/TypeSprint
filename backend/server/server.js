@@ -58,6 +58,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
+// Cache-Control Headers Middleware - Prevent stale content on hard refresh
+app.use((req, res, next) => {
+  // Set cache control headers to ensure fresh content
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate, public, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  next();
+});
+
 // Rate Limiter configuration to prevent DDoS and brute-force attacks
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -84,6 +95,16 @@ app.use(cookieParser());
 // Connect to PostgreSQL with Sequelize Sync is handled near bottom
 const syncOptions = { alter: { drop: false } };
 
+// Root Route Handler - Home/Status endpoint
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "🚀 API is running smoothly",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Routes
 app.use("/auth", require('./routes/auth'));

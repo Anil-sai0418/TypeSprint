@@ -6,34 +6,90 @@ const CORE_ASSETS = [
   '/Type-logo.png'
 ];
 
+// Cache version control for automatic updates
+const CACHE_VERSION = 'v1';
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
   );
+  // Force the waiting service worker to become active
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-    )
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys
+          .filter((key) => !key.includes(CACHE_VERSION))
+          .map((key) => {
+            console.log('Deleting old cache:', key);
+            return caches.delete(key);
+          })
+      );
+    })
   );
+  // Claim all clients immediately
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
 
+  // Don't cache API calls - always fetch fresh
+  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/auth') || 
+      url.pathname.startsWith('/profile') || url.pathname.startsWith('/typing-test')) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // For HTML files, always fetch fresh
+  if (request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // For other assets (JS, CSS, images), use cache-first strategy with network fallback
   event.respondWith(
-    caches.match(request).then((cached) =>
-      cached || fetch(request).then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-    )
+    caches.match(request).then((cached) => {
+      return (
+        cached ||
+        fetch(request).then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+      );
+    })
   );
+});
+
+// Listen for messages from clients
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    caches.keys().then((keys) => {
+      Promise.all(keys.map((key) => caches.delete(key)));
+    });
+  }
 });

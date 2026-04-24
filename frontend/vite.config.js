@@ -29,8 +29,22 @@ export default defineConfig({
         drop_debugger: true
       }
     },
+    // Enable file hashing for all assets to bust cache on updates
+    assetsDir: 'assets',
+    // Add hash to all file types
     rollupOptions: {
       output: {
+        // Hash files to ensure cache busting on updates
+        entryFileNames: 'js/[name]-[hash].js',
+        chunkFileNames: 'js/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.')
+          const ext = info[info.length - 1]
+          if (/png|jpe?g|gif|svg|webp|woff|woff2|eot|ttf|otf/.test(ext)) {
+            return `assets/[name]-[hash][extname]`
+          }
+          return `assets/[name]-[hash][extname]`
+        },
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
