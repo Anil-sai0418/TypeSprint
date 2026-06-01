@@ -62,7 +62,9 @@ const PushNotificationSetup = () => {
   useEffect(() => {
     // Listen for foreground notifications continuously
     const unsubscribe = onMessageListener((payload) => {
-      console.log('Received foreground message:', payload);
+      if (import.meta.env.DEV) {
+        console.log('Received foreground message:', payload);
+      }
       
       // Show beautiful styled in-app toast
       addToast(payload);

@@ -39,8 +39,10 @@ export const useManualNotification = () => {
         });
       }
       
-      console.log(`[TestNotification] Sent: ${randomType}`);
-      console.log('[TestNotification] Current notifications:', notifications);
+      if (import.meta.env.DEV) {
+        console.log(`[TestNotification] Sent: ${randomType}`);
+        console.log('[TestNotification] Current notifications:', notifications);
+      }
     };
 
     // Test rank change notification specifically
@@ -56,11 +58,13 @@ export const useManualNotification = () => {
         positionsChanged: Math.abs(previousRank - newRank),
       });
       
-      console.log(`[TestRankChange] Simulated rank change: #${previousRank} → #${newRank}`);
-      console.log('[TestRankChange] Notification sent:', {
-        improvement: isImprovement,
-        positionsChanged: Math.abs(previousRank - newRank),
-      });
+      if (import.meta.env.DEV) {
+        console.log(`[TestRankChange] Simulated rank change: #${previousRank} → #${newRank}`);
+        console.log('[TestRankChange] Notification sent:', {
+          improvement: isImprovement,
+          positionsChanged: Math.abs(previousRank - newRank),
+        });
+      }
     };
 
     window.testStreakMilestone = (streakDays = 5) => {
@@ -72,7 +76,9 @@ export const useManualNotification = () => {
         isMilestone: true,
       });
       
-      console.log(`[TestStreakMilestone] Sent notification for ${streakDays}-day streak`);
+      if (import.meta.env.DEV) {
+        console.log(`[TestStreakMilestone] Sent notification for ${streakDays}-day streak`);
+      }
     };
 
     window.testInactivityReminder = () => {
@@ -83,22 +89,28 @@ export const useManualNotification = () => {
         hoursInactive: 24,
       });
       
-      console.log('[TestInactivityReminder] Sent inactivity reminder');
+      if (import.meta.env.DEV) {
+        console.log('[TestInactivityReminder] Sent inactivity reminder');
+      }
     };
 
     window.clearNotifications = () => {
       localStorage.removeItem('mokey_notifications');
       window.location.reload();
-      console.log('[TestNotification] Cleared all notifications');
+      if (import.meta.env.DEV) {
+        console.log('[TestNotification] Cleared all notifications');
+      }
     };
 
-    console.log('%c[Notification System] Ready for testing', 'color: green; font-weight: bold;');
-    console.log('Use these commands in browser console:');
-    console.log('  window.testNotification() - Send a random test notification');
-    console.log('  window.testRankChange(previousRank, newRank) - Test rank change (e.g., testRankChange(5, 2))');
-    console.log('  window.testStreakMilestone(days) - Test streak milestone (e.g., testStreakMilestone(5))');
-    console.log('  window.testInactivityReminder() - Test inactivity reminder');
-    console.log('  window.clearNotifications() - Clear all notifications');
+    if (import.meta.env.DEV) {
+      console.log('%c[Notification System] Ready for testing', 'color: green; font-weight: bold;');
+      console.log('Use these commands in browser console:');
+      console.log('  window.testNotification() - Send a random test notification');
+      console.log('  window.testRankChange(previousRank, newRank) - Test rank change (e.g., testRankChange(5, 2))');
+      console.log('  window.testStreakMilestone(days) - Test streak milestone (e.g., testStreakMilestone(5))');
+      console.log('  window.testInactivityReminder() - Test inactivity reminder');
+      console.log('  window.clearNotifications() - Clear all notifications');
+    }
 
     return () => {
       delete window.testNotification;

@@ -7,22 +7,6 @@ const { sendLoginNotification } = require('../utils/emailService');
 
 const router = express.Router();
 
-// GET /auth/test-email - DEBUGGING ROUTE
-router.get("/test-email", async (req, res) => {
-  try {
-    const { sendLoginNotification } = require('../utils/emailService');
-    const result = await sendLoginNotification(process.env.EMAIL_USER, "Test User");
-    
-    if (result) {
-      res.send({ success: true, message: "Email sent successfully! Check your inbox." });
-    } else {
-      res.status(500).send({ success: false, message: "Failed: The function returned false. Check your production server logs immediately." });
-    }
-  } catch (err) {
-    res.status(500).send({ success: false, message: "Hard Crash: " + err.message, stack: err.stack });
-  }
-});
-
 // POST /auth/register
 router.post("/register", async (req, res) => {
   try {

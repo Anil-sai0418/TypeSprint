@@ -66,13 +66,15 @@ export default function Result({
         raw: testData.rawWpm || 0,
       };
 
-      const response = await saveTestResult(payload, token);
-      console.log("Test saved to backend:", response);
+      await saveTestResult(payload, token);
 
       // Increment contribution heatmap
       await incrementContributionActivity(email, { wpm: testData.netWpm, accuracy: testData.accuracy }, token);
     } catch (error) {
-      console.error("Error saving test to backend:", error);
+      // Silent fail - error already handled by API
+      if (import.meta.env.DEV) {
+        console.error("Error saving test to backend:", error);
+      }
     }
   };
 

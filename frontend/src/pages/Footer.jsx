@@ -198,7 +198,7 @@ function Footer({ isLoggedIn = false }) {
   };
 
   return (
-    <footer className="relative bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white overflow-hidden font-sans mt-auto border-t border-zinc-200 dark:border-zinc-800">
+    <footer className="relative bg-zinc-50 mt-16 dark:bg-black text-zinc-900 dark:text-white overflow-hidden font-sans  border-t border-zinc-200 dark:border-zinc-800">
       {/* Toast Notification */}
       <AnimatePresence>
         {showToast && (
@@ -252,8 +252,8 @@ function Footer({ isLoggedIn = false }) {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           
           {/* ABOUT Column */}
           <div className="md:col-span-1 space-y-6">
@@ -454,7 +454,7 @@ function Footer({ isLoggedIn = false }) {
       
       {/* Bottom Section */}
       <div className="relative z-20 border-t border-zinc-200 dark:border-zinc-800">
-         <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center text-[0.65rem] font-bold text-zinc-400 uppercase tracking-wider">
+         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-[0.65rem] font-bold text-zinc-400 uppercase tracking-wider">
           <p>© {new Date().getFullYear()} TypeVex. All rights reserved.</p>
           
           <div className="relative mt-4 md:mt-0 flex gap-4 items-center">

@@ -1,0 +1,89 @@
+/* Contribution Graph Heatmap Styles */
+
+.heatmap-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.react-calendar-heatmap {
+  margin: 0;
+  padding: 0;
+  display: inline-block;
+  min-width: 100%;
+}
+
+/* SVG Elements */
+.react-calendar-heatmap svg {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Rectangle styling */
+.react-calendar-heatmap rect {
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease-in-out;
+  stroke-width: 2px;
+}
+
+.react-calendar-heatmap rect:hover {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+  filter: brightness(1.1);
+}
+
+.react-calendar-heatmap rect:active {
+  filter: brightness(0.95);
+}
+
+/* Text styling for months and weekdays */
+.react-calendar-heatmap text {
+  font-size: 11px;
+  font-weight: 500;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.react-calendar-heatmap tspan {
+  dominant-baseline: middle;
+}
+
+/* Tooltip styling (optional - for native SVG tooltip) */
+.react-calendar-heatmap title {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .heatmap-container {
+    max-width: 100%;
+  }
+
+  .react-calendar-heatmap {
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
+}
+
+@media (max-width: 480px) {
+  .react-calendar-heatmap {
+    transform: scale(0.75);
+    transform-origin: top left;
+  }
+}
+
+/* Dark mode specific adjustments */
+.dark .heatmap-container {
+  background: transparent;
+}
+
+/* Print styles */
+@media print {
+  .heatmap-container {
+    overflow: visible;
+  }
+
+  .react-calendar-heatmap rect:hover {
+    filter: none;
+  }
+}

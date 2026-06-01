@@ -75,7 +75,9 @@ export default function Nav() {
         setIsEditing(false);
         const { phone, address, profileImage } = userProfile;
         localStorage.setItem("userProfile", JSON.stringify({ phone, address, profileImage }));
-        console.log('Profile updated:', userProfile);
+        if (import.meta.env.DEV) {
+          console.log('Profile updated:', userProfile);
+        }
     };
 
     useEffect(() => {
