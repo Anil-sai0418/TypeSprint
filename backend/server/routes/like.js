@@ -2,6 +2,7 @@ const express = require('express');
 const ApplicationLike = require('../models/ApplicationLike');
 const User = require('../models/User');
 const verifyToken = require('../middleware/verifyToken');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ router.get("/status", async (req, res) => {
           userLiked = likesArray.some(like => like.userId === user.id);
         }
       } catch (error) {
-        console.log("Token verification for like status skipped");
+        logger.debug("Token verification for like status skipped", { requestId: req.id, email });
       }
     }
 
@@ -40,6 +41,7 @@ router.get("/status", async (req, res) => {
       userLiked
     });
   } catch (err) {
+    logger.error(err, { requestId: req.id, route: '/like/status' });
     res.status(500).send({ success: false, message: "Server error", error: err.message });
   }
 });
@@ -96,6 +98,7 @@ router.post("/toggle", verifyToken, async (req, res) => {
       userLiked: existingLikeIndex === -1
     });
   } catch (err) {
+    logger.error(err, { requestId: req.id, route: '/like/toggle' });
     res.status(500).send({ success: false, message: "Server error", error: err.message });
   }
 });
@@ -117,8 +120,10 @@ router.get("/count", async (req, res) => {
       totalLikes: appLike.totalLikes
     });
   } catch (err) {
+    logger.error(err, { requestId: req.id, route: '/like/count' });
     res.status(500).send({ success: false, message: "Server error", error: err.message });
   }
 });
 
 module.exports = router;
+

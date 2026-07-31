@@ -4,11 +4,12 @@ const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const admin = require('../config/firebase'); // assuming firebase is configured as `admin`
 const moment = require('moment');
+const logger = require('../utils/logger');
 
 // Function to send streak reminder
 const sendStreakReminders = async () => {
   try {
-    console.log('Running streak reminder job...');
+    logger.info('Streak Cron Started', { category: 'CRON' });
     
     // We want users who took a test yesterday but not today
     // For streak to break, they must have missed a day (or close to missing)
@@ -65,14 +66,14 @@ const sendStreakReminders = async () => {
 
       try {
         await admin.messaging().send(message);
-        console.log(`Sent streak reminder to ${user.email}`);
+        logger.info('Notification Sent', { category: 'CRON', targetEmail: user.email });
       } catch (err) {
-        console.error(`Failed to send reminder to ${user.email}:`, err);
+        logger.error(err, { category: 'CRON', targetEmail: user.email, context: 'Streak reminder push failed' });
       }
     }
-    console.log('Streak reminder job completed.');
+    logger.info('Streak reminder job completed.', { category: 'CRON', processedCount: profiles.length });
   } catch (error) {
-    console.error('Error in sendStreakReminders job:', error);
+    logger.error(error, { category: 'CRON', context: 'Error in sendStreakReminders job' });
   }
 };
 
@@ -80,7 +81,8 @@ const sendStreakReminders = async () => {
 // '0 * * * *' runs at minute 0 of every hour
 exports.initJob = () => {
     cron.schedule('0 * * * *', sendStreakReminders);
-    console.log('Streak notification job initialized.');
+    logger.info('Cron Started', { category: 'CRON', schedule: '0 * * * *' });
 };
 
 exports.sendStreakReminders = sendStreakReminders;
+

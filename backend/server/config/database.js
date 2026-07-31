@@ -1,5 +1,6 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
+const logger = require('../utils/logger');
 
 // Determine connection URL (either from config or default local postgres DB)
 // User must ensure the DB 'bro' exists if using default local URL
@@ -21,8 +22,15 @@ if (forceSsl) {
 
 const sequelize = new Sequelize(DB_URL, {
   dialect: 'postgres',
-  logging: false, // Set to console.log to see SQL queries
-  dialectOptions
+  logging: process.env.DB_LOGGING === 'true' ? (msg) => logger.debug(msg, { category: 'DATABASE_QUERY' }) : false,
+  dialectOptions,
+  pool: {
+    max: 20,
+    min: 2,
+    acquire: 10000,
+    idle: 10000
+  }
 });
 
 module.exports = sequelize;
+

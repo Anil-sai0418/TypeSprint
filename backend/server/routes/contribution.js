@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const ContributionActivity = require('../models/ContributionActivity');
 const verifyToken = require('../middleware/verifyToken');
 const { getTodayDateString, getDateRange, isValidDateString, formatDateToString } = require('../utils/dateUtils');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -40,7 +41,13 @@ router.post('/increment', verifyToken, async (req, res) => {
     }
     await activity.save();
 
-    console.log(`✅ Contribution activity incremented for ${email} on ${today}`);
+    logger.info('Contribution activity incremented', {
+      requestId: req.id,
+      userId,
+      email,
+      today,
+      count: activity.activityCount
+    });
 
     return res.status(200).json({
       success: true,
@@ -51,7 +58,7 @@ router.post('/increment', verifyToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error incrementing activity:', error);
+    logger.error(error, { requestId: req.id, context: 'Error incrementing activity' });
     return res.status(500).json({ success: false, message: 'Failed to increment activity' });
   }
 });
@@ -99,7 +106,7 @@ router.get('/activity', verifyToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching activity:', error);
+    logger.error(error, { requestId: req.id, context: 'Error fetching activity' });
     return res.status(500).json({ success: false, message: 'Failed to fetch activity data' });
   }
 });
@@ -160,7 +167,7 @@ router.get('/stats', verifyToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    logger.error(error, { requestId: req.id, context: 'Error fetching stats' });
     return res.status(500).json({ success: false, message: 'Failed to fetch statistics' });
   }
 });
@@ -206,9 +213,10 @@ router.post('/set-activity', verifyToken, async (req, res) => {
       data: activity
     });
   } catch (error) {
-    console.error('Error setting activity:', error);
+    logger.error(error, { requestId: req.id, context: 'Error setting activity' });
     return res.status(500).json({ success: false, message: 'Failed to set activity' });
   }
 });
 
 module.exports = router;
+

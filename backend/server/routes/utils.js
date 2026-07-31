@@ -1,5 +1,6 @@
 const express = require('express');
 const verifyToken = require('../middleware/verifyToken');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -56,30 +57,11 @@ router.get("/random-text", (req, res) => {
       "eat", "drink", "cook", "buy", "sell", "pay", "cost", "price", "money", "rich", "poor"
     ];
 
-    // Generate unique words - no repetition
+    // Generate random words for requested limit
     const generatedWords = [];
-    const used = new Set();
-
-    while (generatedWords.length < limit) {
+    for (let i = 0; i < limit; i++) {
       const randomWord = COMMON_WORDS[Math.floor(Math.random() * COMMON_WORDS.length)];
-      
-      // Ensure no repetition
-      if (!used.has(randomWord)) {
-        generatedWords.push(randomWord);
-        used.add(randomWord);
-      } else {
-        // If we've used this word, pick another
-        let attempts = 0;
-        while (attempts < 5) {
-          const altWord = COMMON_WORDS[Math.floor(Math.random() * COMMON_WORDS.length)];
-          if (!used.has(altWord)) {
-            generatedWords.push(altWord);
-            used.add(altWord);
-            break;
-          }
-          attempts++;
-        }
-      }
+      generatedWords.push(randomWord);
     }
 
     let wordArray = generatedWords.slice(0, limit);
@@ -156,7 +138,7 @@ router.get("/random-text", (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Random text generation error:', err);
+    logger.error(err, { requestId: req.id, context: 'Random text generation error' });
     res.status(500).send({ 
       success: false, 
       message: "Server error", 

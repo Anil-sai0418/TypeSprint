@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const logger = require('../utils/logger');
 
 // Initialize Firebase Admin SDK
 // You will need to add your service account key JSON as environment variables
@@ -11,9 +12,9 @@ if (serviceAccount) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
-  console.log('✅ Firebase Admin initialized');
+  logger.info('Firebase Admin initialized', { category: 'FIREBASE' });
 } else {
-  console.warn('⚠️ Firebase Admin not initialized. Please set FIREBASE_SERVICE_ACCOUNT env var.');
+  logger.warn('Firebase Admin not initialized. Please set FIREBASE_SERVICE_ACCOUNT env var.', { category: 'FIREBASE' });
 }
 
 module.exports = admin;

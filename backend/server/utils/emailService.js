@@ -1,36 +1,42 @@
 const nodemailer = require('nodemailer');
+const logger = require('./logger');
 
-const createTransporter = () => {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.warn('⚠️ EMAIL_USER or EMAIL_PASS not found in environment variables. Emails will not be sent.');
-        return null;
-    }
-    
-    return nodemailer.createTransport({
+let transporter = null;
+
+const getTransporter = () => {
+  if (!transporter && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    try {
+      transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
         secure: false, // true for 465, false for other ports (587 uses STARTTLS)
-        // Force IPv4 exactly because Render free-tier drops Google IPv6 connections
-        // which causes the "ENETUNREACH 2404:6800..." error
+        connectionTimeout: 3000, // 3s timeout
+        greetingTimeout: 3000,
+        socketTimeout: 3000,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
         },
         tls: {
-            rejectUnauthorized: false
+          rejectUnauthorized: false
         }
-    });
+      });
+    } catch (err) {
+      logger.error(err, { context: 'Failed to create email transporter' });
+      transporter = null;
+    }
+  }
+  return transporter;
 };
-
-const transporter = createTransporter();
 
 // Overwrite the Node DNS behavior to force IPv4
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
 const sendLoginNotification = async (userEmail, userName) => {
-    if (!transporter) {
-        console.log(`Skipping login email to ${userEmail} (email service not configured)`);
+    const activeTransporter = getTransporter();
+    if (!activeTransporter) {
+        logger.info('Skipping login email (email service not configured)', { userEmail });
         return false;
     }
 
@@ -85,10 +91,10 @@ const sendLoginNotification = async (userEmail, userName) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`Login notification sent to ${userEmail}: ${info.messageId}`);
+        logger.info('Email Sent', { userEmail, messageId: info.messageId });
         return true;
     } catch (error) {
-        console.error('Error sending login notification email:', error.message);
+        logger.error(error, { context: 'Error sending login notification email', userEmail });
         return false;
     }
 };

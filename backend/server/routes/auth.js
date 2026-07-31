@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const { sendLoginNotification } = require('../utils/emailService');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -39,6 +40,12 @@ router.post("/register", async (req, res) => {
       achievements: ["First Test"]
     });
 
+    logger.info('User Registration Success', {
+      requestId: req.id,
+      userId: savedUser.id,
+      email: savedUser.email
+    });
+
     res.send({
       success: true,
       message: "Registration successful",
@@ -49,6 +56,7 @@ router.post("/register", async (req, res) => {
       }
     });
   } catch (err) {
+    logger.error(err, { requestId: req.id, context: 'Registration Failure' });
     res.status(500).send({ success: false, message: "Registration failed", error: err.message });
   }
 });
@@ -58,19 +66,24 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    logger.auth.loginAttempt({ requestId: req.id, email, ip: req.ip });
+
     if (!email || !password) {
+      logger.auth.loginFailure({ requestId: req.id, email, reason: 'Missing credentials' });
       return res.status(400).send({ success: false, message: "Email and password are required" });
     }
 
     // Find user
     const user = await User.findOne({ where: { email } });
     if (!user) {
+      logger.auth.loginFailure({ requestId: req.id, email, reason: 'User not found' });
       return res.status(404).send({ success: false, message: "User not found" });
     }
 
     // Compare passwords
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      logger.auth.loginFailure({ requestId: req.id, email, userId: user.id, reason: 'Incorrect password' });
       return res.status(401).send({ success: false, message: "Incorrect password" });
     }
 
@@ -81,8 +94,12 @@ router.post("/login", async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Send login notification email (without blocking the response)
-    sendLoginNotification(user.email, user.name).catch(console.error);
+    logger.auth.loginSuccess({
+      requestId: req.id,
+      userId: user.id,
+      email: user.email,
+      ip: req.ip
+    });
 
     res.send({
       success: true,
@@ -94,9 +111,18 @@ router.post("/login", async (req, res) => {
         email: user.email
       }
     });
+
+    // Send login notification email asynchronously in background without blocking response
+    setImmediate(() => {
+      sendLoginNotification(user.email, user.name).catch(err => {
+        logger.error(err, { requestId: req.id, userId: user.id, context: 'sendLoginNotification' });
+      });
+    });
   } catch (err) {
+    logger.error(err, { requestId: req.id, context: 'Login Error' });
     res.status(500).send({ success: false, message: "Login failed", error: err.message });
   }
 });
 
 module.exports = router;
+

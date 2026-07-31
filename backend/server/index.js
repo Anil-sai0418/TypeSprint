@@ -1,6 +1,9 @@
 require("dotenv").config();
 const express = require('express');
 const cors = require('cors');
+const requestIdMiddleware = require('./middleware/requestId.middleware');
+const httpLoggerMiddleware = require('./middleware/logger.middleware');
+const logger = require('./utils/logger');
 const sequelize = require('./config/database');
 
 // Import models to ensure they are registered with Sequelize
@@ -10,6 +13,9 @@ require('./models/ContributionActivity');
 require('./models/ApplicationLike');
 
 const app = express();
+
+app.use(requestIdMiddleware);
+app.use(httpLoggerMiddleware);
 
 // Middleware
 app.use(cors({
@@ -24,6 +30,7 @@ app.use(cors({
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  exposedHeaders: ["Set-Cookie", "X-Request-ID"],
   credentials: true
 }));
 app.use(express.json());
@@ -31,24 +38,20 @@ app.use(express.json());
 // Sync Sequelize Models with Database
 sequelize.sync({ alter: true }) // Using alter to update schema automatically without dropping existing data
   .then(() => {
-    console.log("✅ PostgreSQL Database connected & synchronized successfully");
+    logger.db.connected({ mode: 'Index' });
   })
   .catch((err) => {
-    console.error("❌ SQL Database sync error:", err);
+    logger.db.queryFailed(err, { context: 'Index DB Sync Error' });
   });
 
 // Routes
-console.log('📍 Loading routes...');
+logger.debug('Loading routes...');
 app.use("/auth", require('./routes/auth'));
-console.log('✅ /auth routes loaded');
 app.use("/profile", require('./routes/profile'));
-console.log('✅ /profile routes loaded');
 app.use("/typing-test", require('./routes/typingTest'));
-console.log('✅ /typing-test routes loaded');
 app.use("/contribution", require('./routes/contribution'));
-console.log('✅ /contribution routes loaded');
 app.use("", require('./routes/utils'));
-console.log('✅ /utils routes loaded');
+logger.info('Routes Registered');
 
 // Health check
 app.get("/health", async (req, res) => {
@@ -62,15 +65,15 @@ app.get("/health", async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
+  logger.error(err, { requestId: req.id, route: req.originalUrl, method: req.method });
   res.status(500).send({ success: false, message: "Internal server error" });
 });
 
 // Start server
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Local: http://localhost:${PORT}/`);
+  logger.info('Server Started', { port: PORT, url: `http://localhost:${PORT}/` });
 });
 
 module.exports = app;
+

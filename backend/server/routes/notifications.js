@@ -6,12 +6,13 @@ const UserProfile = require('../models/UserProfile');
 const admin = require('../config/firebase');
 const { Op } = require('sequelize');
 const moment = require('moment');
+const logger = require('../utils/logger');
 
 // Verification middleware for chron jobs
 const verifyCronSecret = (req, res, next) => {
   const secret = req.headers['x-cron-secret'] || req.query['x-cron-secret'];
   if (!secret || secret !== process.env.CRON_SECRET) {
-    console.warn(`[CRON] Unauthorized attempt to trigger streak-reminder from ${req.ip}`);
+    logger.warn('Unauthorized attempt to trigger streak-reminder', { ip: req.ip, requestId: req.id, category: 'CRON' });
     return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
   next();
@@ -20,7 +21,7 @@ const verifyCronSecret = (req, res, next) => {
 // Streak Reminder Endpoint
 router.get('/streak-reminder', verifyCronSecret, async (req, res) => {
   try {
-    console.log('[CRON] Running streak reminder job externally...');
+    logger.info('Streak reminder cron job started externally', { category: 'CRON', requestId: req.id });
     
     const now = moment();
     const twentyFourHoursAgo = moment().subtract(24, 'hours');
@@ -81,26 +82,26 @@ router.get('/streak-reminder', verifyCronSecret, async (req, res) => {
 
       try {
         await admin.messaging().send(message);
-        console.log(`[CRON] Sent streak reminder to ${user.email}`);
+        logger.info('Notification Sent', { category: 'CRON', targetEmail: user.email, requestId: req.id });
         
         // Update last notified time
         profile.lastStreakReminder = now.toDate();
         await profile.save();
         successCount++;
       } catch (err) {
-        console.error(`[CRON] Failed to send reminder to ${user.email}:`, err.message);
+        logger.error(err, { category: 'CRON', targetEmail: user.email, requestId: req.id });
         failureCount++;
       }
     }
 
-    console.log(`[CRON] Streak reminder job completed. Success: ${successCount}, Failed: ${failureCount}`);
+    logger.info('Streak reminder cron job completed', { category: 'CRON', successCount, failureCount, requestId: req.id });
     res.status(200).json({ 
       success: true, 
       message: `Processed ${profiles.length} reminders. Success: ${successCount}, Failed: ${failureCount}`
     });
 
   } catch (error) {
-    console.error('[CRON] Error in streak-reminder endpoint:', error);
+    logger.error(error, { category: 'CRON', requestId: req.id, context: 'Error in streak-reminder endpoint' });
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
@@ -131,9 +132,10 @@ router.post('/register', verifyToken, async (req, res) => {
       { where: { id: req.user.id } }
     );
 
+    logger.info('Device Token Registered', { requestId: req.id, userId: req.user.id });
     res.status(200).json({ success: true, message: 'Push notification successfully registered' });
   } catch (error) {
-    console.error('Error registering device token:', error);
+    logger.error(error, { requestId: req.id, context: 'Error registering device token' });
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -163,9 +165,10 @@ router.post('/send', verifyToken, async (req, res) => {
     };
 
     const response = await admin.messaging().send(message);
+    logger.info('Notification Sent', { requestId: req.id, targetUserId: userId });
     res.status(200).json({ success: true, message: 'Notification sent successfully', response });
   } catch (error) {
-    console.error('Error sending notification:', error);
+    logger.error(error, { requestId: req.id, context: 'Error sending notification' });
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -205,6 +208,7 @@ router.post('/send-all', verifyToken, async (req, res) => {
         };
 
         const response = await admin.messaging().sendEachForMulticast(message);
+        logger.info('Multicast Notification Sent', { requestId: req.id, totalDevices: tokens.length, successCount: response.successCount, failureCount: response.failureCount });
         res.status(200).json({ 
             success: true, 
             message: `Notification sent. Success: ${response.successCount}, Failed: ${response.failureCount}`, 
@@ -212,9 +216,45 @@ router.post('/send-all', verifyToken, async (req, res) => {
         });
 
     } catch (error) {
-         console.error('Error sending multicast notification:', error);
+         logger.error(error, { requestId: req.id, context: 'Error sending multicast notification' });
          res.status(500).json({ success: false, message: 'Server error' });
     }
+});
+
+// Get User Notifications List
+router.get('/user', verifyToken, async (req, res) => {
+  try {
+    const userProfile = await UserProfile.findOne({ where: { userId: req.user.id } });
+    
+    // Dynamic notifications based on user profile state
+    const userNotifications = [
+      {
+        id: `welcome_${req.user.id}`,
+        type: 'achievement_unlocked',
+        data: { achievementId: 'first_test' },
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        read: true
+      }
+    ];
+
+    if (userProfile && userProfile.dailyStreak > 0) {
+      userNotifications.unshift({
+        id: `streak_${req.user.id}_${userProfile.dailyStreak}`,
+        type: 'streak_milestone',
+        data: { streakDays: userProfile.dailyStreak, userId: req.user.id },
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      notifications: userNotifications
+    });
+  } catch (error) {
+    logger.error(error, { requestId: req.id, context: 'Error fetching user notifications' });
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
 module.exports = router;

@@ -4,9 +4,11 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
+const requestIdMiddleware = require('./middleware/requestId.middleware');
+const httpLoggerMiddleware = require('./middleware/logger.middleware');
+const logger = require('./utils/logger');
 const sequelize = require('./config/database');
 
 // Initialize models
@@ -19,6 +21,10 @@ const app = express();
 
 // Trust proxy is required when deploying to platforms like Render or Heroku behind load balancers.
 app.set('trust proxy', 1);
+
+// Attach Request ID middleware & Pino HTTP Logger Middleware
+app.use(requestIdMiddleware);
+app.use(httpLoggerMiddleware);
 
 // CORS Configuration - Professional Setup
 const allowedOrigins = [
@@ -43,14 +49,14 @@ const corsOptions = {
     ) {
       callback(null, true);
     } else {
-      console.warn(`Blocked by CORS: ${origin}`);
+      logger.warn(`Blocked by CORS: ${origin}`, { origin, category: 'CORS' });
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Set-Cookie'],
+  exposedHeaders: ['Set-Cookie', 'X-Request-ID'],
   optionsSuccessStatus: 200,
   maxAge: 86400
 };
@@ -73,6 +79,14 @@ app.use((req, res, next) => {
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Generous limit for development
+  handler: (req, res, next, options) => {
+    logger.warn('Rate Limit Near / Exceeded', {
+      requestId: req.id,
+      ip: req.ip,
+      route: req.originalUrl
+    });
+    res.status(options.statusCode).send(options.message);
+  },
   message: { success: false, message: "Too many requests from this IP, please try again later." },
 });
 
@@ -84,8 +98,6 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable for easier frontend integration if needed
 }));
 app.use(compression()); // Compress all responses
-app.use(morgan('combined')); // Production logging
-
 
 // Standard Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -93,7 +105,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Connect to PostgreSQL with Sequelize Sync is handled near bottom
-const syncOptions = { alter: { drop: false } };
+const syncOptions = { force: false };
 
 // Root Route Handler - Home/Status endpoint
 app.get("/", (req, res) => {
@@ -132,10 +144,16 @@ app.get("/health", async (req, res) => {
   });
 });
 
-// Production-ready Error Handling
+// Production-ready Error Handling Middleware
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  console.error(`[ERROR] ${req.method} ${req.url}:`, err.stack);
+  logger.error(err, {
+    requestId: req.id,
+    route: req.baseUrl ? `${req.baseUrl}${req.path || ''}` : (req.originalUrl || req.url),
+    method: req.method,
+    userId: req.user?.id || req.user?.email || null,
+    statusCode
+  });
   
   res.status(statusCode).json({
     success: false,
@@ -151,22 +169,22 @@ const os = require('os');
 const numCPUs = os.cpus().length;
 
 if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
-  console.log(`\n🚀 Master ${process.pid} is running`);
+  logger.info(`Master process ${process.pid} is running`, { category: 'SYSTEM', pid: process.pid });
   
   // Master process syncs the database ONCE to prevent race conditions during alter
   sequelize.sync(syncOptions).then(() => {
-    console.log('✅ PostgreSQL Database connected & synchronized (Master)');
-    console.log(`⚙️ Scaling across ${numCPUs} CPU cores...\n`);
+    logger.db.connected({ mode: 'Master' });
+    logger.info(`Scaling server across ${numCPUs} CPU cores...`, { numCPUs });
     for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
     }
   }).catch(err => {
-    console.error('❌ SQL Master Database sync error:', err);
+    logger.db.queryFailed(err, { context: 'Master DB Sync' });
     process.exit(1);
   });
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`⚠️ Worker ${worker.process.pid} died. Restarting...`);
+    logger.warn(`Worker ${worker.process.pid} died with code ${code}. Restarting...`, { pid: worker.process.pid, code, signal });
     cluster.fork();
   });
 } else {
@@ -174,16 +192,21 @@ if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
   const startServer = () => {
     const server = app.listen(PORT, () => {
       if (process.env.NODE_ENV !== 'production' || !cluster.isMaster) {
-        console.log(`\n🚀 Server is live in ${process.env.NODE_ENV || 'development'} mode (Worker ${process.pid})`);
-        console.log(`📍 URL: http://localhost:${PORT}/`);
-        console.log(`📦 Node Version: ${process.version}`);
+        logger.info('Server Started', {
+          port: PORT,
+          pid: process.pid,
+          environment: process.env.NODE_ENV || 'development',
+          nodeVersion: process.version,
+          url: `http://localhost:${PORT}/`
+        });
       }
     });
 
     process.on('SIGTERM', () => {
-      console.info('SIGTERM signal received.');
+      logger.info('SIGTERM signal received. Shutting down gracefully...');
       server.close(() => {
         sequelize.close().then(() => {
+          logger.info('Database connection closed gracefully.');
           process.exit(0);
         });
       });
@@ -193,20 +216,22 @@ if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
   if (process.env.NODE_ENV !== 'production') {
     // In development mode (not a cluster), sync the DB
     sequelize.sync(syncOptions).then(() => {
-      console.log('✅ PostgreSQL Database connected & synchronized (Dev)');
+      logger.db.connected({ mode: 'Dev' });
       startServer();
     }).catch(err => {
-      console.error('❌ SQL Database sync error:', err);
+      logger.db.queryFailed(err, { context: 'Dev DB Sync' });
     });
   } else {
     // Production workers just connect (no sync, master handled it)
     sequelize.authenticate().then(() => {
+      logger.db.connected({ mode: 'Worker' });
       startServer();
     }).catch(err => {
-      console.error('❌ SQL Database connection error in Worker:', err);
+      logger.db.queryFailed(err, { context: 'Worker DB Connect' });
       process.exit(1);
     });
   }
 }
 
 module.exports = app;
+

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const ContributionActivity = require('../models/ContributionActivity');
 const verifyToken = require('../middleware/verifyToken');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -167,7 +168,7 @@ router.post("/result", verifyToken, async (req, res) => {
           await admin.messaging().send(message);
         }
       } catch (err) {
-        console.error('Error sending achievement notification:', err.message);
+        logger.error(err, { requestId: req.id, context: 'Error sending achievement notification' });
       }
     }
 
@@ -200,7 +201,7 @@ router.post("/result", verifyToken, async (req, res) => {
               },
               token: user.fcmToken,
             };
-            admin.messaging().send(message).catch(e => console.error('Error sending self rank up notification:', e.message));
+            admin.messaging().send(message).catch(e => logger.error(e, { requestId: req.id, context: 'Error sending self rank up notification' }));
           }
 
           // 2. Notify users who were overtaken (dropped rank due to this new score passing them)
@@ -243,11 +244,11 @@ router.post("/result", verifyToken, async (req, res) => {
                 tokens: tokensToNotify,
               };
               
-              admin.messaging().sendMulticast(multicastMessage).catch(e => console.error('Error sending overtaken multicast push:', e.message));
+              admin.messaging().sendMulticast(multicastMessage).catch(e => logger.error(e, { requestId: req.id, context: 'Error sending overtaken multicast push' }));
             }
           }
         } catch (err) {
-          console.error('Error sending rank up notifications:', err.message);
+          logger.error(err, { requestId: req.id, context: 'Error sending rank up notifications' });
         }
       }
 
@@ -263,11 +264,11 @@ router.post("/result", verifyToken, async (req, res) => {
         }
       });
     } catch (saveErr) {
-      console.error("Error saving profile:", saveErr);
+      logger.error(saveErr, { requestId: req.id, context: 'Error saving profile' });
       res.status(500).send({ success: false, message: "Server error", error: saveErr.message });
     }
   } catch (err) {
-    console.error("Error saving test result:", err);
+    logger.error(err, { requestId: req.id, context: 'Error saving test result' });
     res.status(500).send({ success: false, message: "Server error", error: err.message });
   }
 });

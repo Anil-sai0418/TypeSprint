@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const bcrypt = require('bcrypt');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -61,7 +62,7 @@ router.get('/google/callback',
             res.redirect(`${clientUrl}/oauth/callback?token=${token}`);
 
         } catch (err) {
-            console.error("Google OAuth Error:", err);
+            logger.error(err, { requestId: req.id, context: 'Google OAuth Error' });
             res.redirect('/login?error=oauth_failed');
         }
     }
@@ -107,10 +108,11 @@ router.get('/github/callback',
             res.redirect(`${clientUrl}/oauth/callback?token=${token}`);
 
         } catch (err) {
-            console.error("GitHub OAuth Error:", err);
+            logger.error(err, { requestId: req.id, context: 'GitHub OAuth Error' });
             res.redirect('/login?error=oauth_failed');
         }
     }
 );
 
 module.exports = router;
+
