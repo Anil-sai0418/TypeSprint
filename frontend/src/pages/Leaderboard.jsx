@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
-import { getLeaderboard } from "../services/api";
+import { useLeaderboardQuery } from "../hooks/useQueries";
 import { Zap, TrendingUp, Flame, Target, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import {
   Table,
@@ -69,12 +68,7 @@ export default function Leaderboard() {
   
   const itemsPerPage = 10;
 
-  const { data: qData, isLoading, error } = useQuery({
-    queryKey: ["leaderboard", 100],
-    queryFn: () => getLeaderboard(100),
-    staleTime: 60 * 1000, // 1 minute
-    retry: 1
-  });
+  const { data: qData, isLoading, error } = useLeaderboardQuery(100);
 
   useEffect(() => {
     if (qData?.success) {

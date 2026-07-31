@@ -1,40 +1,19 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Activity, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getContributionActivity } from '../services/api';
+import { useContributionActivityQuery } from '../hooks/useQueries';
 
 function ContributionGraph({ email, token, isDark = false }) {
-  const [heatmapData, setHeatmapData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [tooltip, setTooltip] = useState(null);
   const [tooltipPos, setTooltipPos] = useState(null);
-  const dataFetchedRef = useRef(false);
 
-  // Fetch activity data
-  useEffect(() => {
-    if (!email || !token || dataFetchedRef.current) return;
+  const { data: activityRes, isLoading: loading, error: queryError } = useContributionActivityQuery(email, 365, token);
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await getContributionActivity(email, 365, token);
-        if (!response.success) {
-          throw new Error(response.message || 'Failed to load activity');
-        }
-        setHeatmapData(response.data?.activityMap || {});
-        dataFetchedRef.current = true;
-      } catch (err) {
-        console.error('Error fetching activity:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const heatmapData = useMemo(() => {
+    return activityRes?.success ? (activityRes.data?.activityMap || {}) : {};
+  }, [activityRes]);
 
-    fetchData();
-  }, [email, token]);
+  const error = queryError?.message || (activityRes && !activityRes.success ? activityRes.message : null);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -56,10 +35,6 @@ function ContributionGraph({ email, token, isDark = false }) {
 
   if (error) {
     return <ErrorState error={error} isDark={isDark} />;
-  }
-
-  if (Object.keys(heatmapData).length === 0) {
-    return <EmptyState isDark={isDark} />;
   }
 
   return (

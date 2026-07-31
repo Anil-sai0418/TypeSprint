@@ -13,8 +13,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const ProfileCard = ({ user, profile, isEditing, setIsEditing, handleLogout, handleImageChange }) => {
+const ProfileCard = ({ user, profile, isEditing, setIsEditing, handleLogout, handleImageChange, imagePreview }) => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const avatarSrc = imagePreview || profile?.profileImage;
 
   return (
     <Card className="border-border shadow-sm overflow-hidden">
@@ -23,8 +24,8 @@ const ProfileCard = ({ user, profile, isEditing, setIsEditing, handleLogout, han
         <div className="flex flex-col items-center text-center space-y-4">
           <div className="relative group">
             <div className="h-24 w-24 rounded-full border-4 border-background bg-muted flex items-center justify-center overflow-hidden shadow-lg group-hover:shadow-xl transition-shadow">
-              {profile?.profileImage ? (
-                <img src={profile.profileImage} alt={user.name} className="h-full w-full object-cover" />
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={user?.name || "User Avatar"} className="h-full w-full object-cover" />
               ) : (
                 <User className="h-12 w-12 text-muted-foreground" />
               )}

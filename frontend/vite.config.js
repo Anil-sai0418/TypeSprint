@@ -15,6 +15,18 @@ export default defineConfig({
     compression({ algorithm: 'gzip', ext: '.gz' }),
     compression({ algorithm: 'brotliCompress', ext: '.br' })
   ],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:10000',
+      '/auth': 'http://localhost:10000',
+      '/profile': 'http://localhost:10000',
+      '/typing-test': 'http://localhost:10000',
+      '/notifications': 'http://localhost:10000',
+      '/like': 'http://localhost:10000',
+      '/contribution': 'http://localhost:10000',
+      '/random-text': 'http://localhost:10000'
+    }
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -1,5 +1,5 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useCallback, useRef, useEffect } from 'react';
+import { fetchUserNotifications } from '../services/api';
 
 const NotificationContext = createContext();
 
@@ -9,15 +9,36 @@ export const NotificationProvider = ({ children }) => {
   const eventDeduplicationRef = useRef(new Map());
   const storageRef = useRef('mokey_notifications');
 
-  // Load notifications from localStorage on mount
+  const hasFetchedBackendRef = useRef(false);
+
+  // Load notifications from localStorage and backend on mount
   useEffect(() => {
+    let localNotifications = [];
     const stored = localStorage.getItem(storageRef.current);
     if (stored) {
       try {
-        setNotifications(JSON.parse(stored));
+        localNotifications = JSON.parse(stored);
+        setNotifications(localNotifications);
       } catch (err) {
         console.error('Failed to load notifications:', err);
       }
+    }
+
+    const token = localStorage.getItem('token');
+    if (token && !hasFetchedBackendRef.current) {
+      hasFetchedBackendRef.current = true;
+      fetchUserNotifications(token).then((res) => {
+        if (res && res.success && Array.isArray(res.notifications)) {
+          setNotifications((prev) => {
+            const existingIds = new Set(prev.map((n) => n.id));
+            const newBackendItems = res.notifications.filter((n) => !existingIds.has(n.id));
+            if (newBackendItems.length > 0) {
+              return [...newBackendItems, ...prev];
+            }
+            return prev;
+          });
+        }
+      });
     }
   }, []);
 

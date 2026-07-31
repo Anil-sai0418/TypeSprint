@@ -5,7 +5,16 @@ import './index.css'
 import App from './App.jsx'
 import './i18n'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes fresh cache
+      gcTime: 15 * 60 * 1000, // Keep in memory for 15 minutes
+      refetchOnWindowFocus: false, // Prevent aggressive focus refetches
+      retry: 1
+    }
+  }
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -16,25 +25,38 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Service Worker Registration with cache invalidation
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(registration => {
-      // Check for updates every 6 hours
-      setInterval(() => {
-        registration.update().catch(err => {
-          console.warn('Service worker update check failed:', err);
+if ('serviceWorker' in navigator) {
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(registration => {
+        setInterval(() => {
+          registration.update().catch(err => {
+            console.warn('Service worker update check failed:', err);
+          });
+        }, 6 * 60 * 60 * 1000);
+        
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.info('New service worker activated, reloading page...');
+          window.location.reload();
         });
-      }, 6 * 60 * 60 * 1000);
-      
-      // Listen for controller changes (new SW activated)
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.info('New service worker activated, reloading page...');
-        window.location.reload();
+      }).catch((error) => {
+        console.warn('Service worker registration failed:', error);
       });
-    }).catch((error) => {
-      console.warn('Service worker registration failed:', error);
     });
-  });
+  } else {
+    // Unregister legacy service workers in dev mode to prevent network locks
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      let unregisteredAny = false;
+      for (const registration of registrations) {
+        registration.unregister();
+        unregisteredAny = true;
+      }
+      if (unregisteredAny && !sessionStorage.getItem('sw_cleared_dev')) {
+        sessionStorage.setItem('sw_cleared_dev', 'true');
+        window.location.reload();
+      }
+    });
+  }
 }
 
 // Prevent aggressive caching in the browser

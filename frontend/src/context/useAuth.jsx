@@ -2,6 +2,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { login as apiLogin, register as apiRegister, getFullUserProfile } from "../services/api";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../lib/queryKeys";
 
 const AuthContext = createContext();
 
@@ -9,26 +11,41 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     const fetchUser = async (email, token) => {
         try {
-            const userData = await getFullUserProfile(email, token);
+            const userData = await queryClient.fetchQuery({
+                queryKey: queryKeys.userProfile(email),
+                queryFn: () => getFullUserProfile(email, token),
+                staleTime: 10 * 60 * 1000 // 10 minutes cache
+            });
+
             if (userData && userData.success) {
                 // Merge core user data with profile data (which contains profileImage)
                 const mergedUser = {
                     ...userData.user,
                     ...(userData.profile || {}),
                     // Ensure the name stays consistent if profile has a different name field or none
-                    name: userData.user.name || (userData.profile && userData.profile.name) || email.split('@')[0]
+                    name: userData.user?.name || (userData.profile && userData.profile.name) || email.split('@')[0]
                 };
                 setUser(mergedUser);
+                setIsAuthenticated(true);
             } else {
-                setUser({ email, name: email.split('@')[0] });
+                // Token invalid or profile fetch returned unsuccessful
+                localStorage.removeItem("token");
+                localStorage.removeItem("userEmail");
+                setIsAuthenticated(false);
+                setUser(null);
             }
         } catch (err) {
-            console.error("Failed to fetch user profile", err);
-            // Fallback if profile fetch fails but token exists
-            setUser({ email, name: email.split('@')[0] });
+            console.error("Failed to fetch user profile (token expired or invalid):", err);
+            // Clear invalid session tokens so the app does not hang or loop on 401s
+            localStorage.removeItem("token");
+            localStorage.removeItem("userEmail");
+            queryClient.clear();
+            setIsAuthenticated(false);
+            setUser(null);
         }
     };
 
@@ -39,13 +56,14 @@ export const AuthProvider = ({ children }) => {
                 const userEmail = localStorage.getItem("userEmail");
 
                 if (token && userEmail) {
-                    setIsAuthenticated(true);
                     await fetchUser(userEmail, token);
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);
                 localStorage.removeItem("token");
                 localStorage.removeItem("userEmail");
+                setIsAuthenticated(false);
+                setUser(null);
             } finally {
                 setLoading(false);
             }
@@ -73,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         localStorage.removeItem("token");
         localStorage.removeItem("userEmail");
+        queryClient.clear(); // Clear TanStack Query cache on logout
         setIsAuthenticated(false);
         setUser(null);
         toast.info("Successfully logged out!");

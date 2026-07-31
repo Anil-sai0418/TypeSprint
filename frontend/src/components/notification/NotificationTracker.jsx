@@ -8,8 +8,11 @@ const NotificationTracker = () => {
   const token = localStorage.getItem('token');
   const enabled = Boolean(isAuthenticated && userEmail && token);
 
+  // Only run leaderboard rank tracking when user visits leaderboard to prevent eager boot requests
+  const isLeaderboardPage = typeof window !== 'undefined' && window.location.pathname.includes('/leaderboard');
+
   useActivityTracking({ enabled, userEmail });
-  useLeaderboardTracking({ enabled, userEmail });
+  useLeaderboardTracking({ enabled: enabled && isLeaderboardPage, userEmail });
   useStreakTracking({ enabled, userEmail, token });
   useAchievementTracking({ enabled, userEmail, token });
 

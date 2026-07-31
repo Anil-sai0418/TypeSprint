@@ -1,5 +1,5 @@
-// Use environment variable or deployed backend URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://typesprint-1.onrender.com';
+// Use environment variable or local backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:10000';
 
 // ==================== TEXT GENERATION ====================
 
@@ -304,6 +304,25 @@ export const getContributionStats = async (email, token = null) => {
   } catch (error) {
     console.error('Error fetching contribution stats:', error);
     throw error;
+  }
+};
+
+/**
+ * Fetch backend notifications for authenticated user
+ */
+export const fetchUserNotifications = async (token) => {
+  try {
+    if (!token) return { success: false, notifications: [] };
+    const response = await fetch(`${API_BASE_URL}/notifications/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) return { success: false, notifications: [] };
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user notifications:', error);
+    return { success: false, notifications: [] };
   }
 };
 

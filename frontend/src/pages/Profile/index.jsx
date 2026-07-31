@@ -240,6 +240,7 @@ function Profile() {
               setIsEditing={setIsEditing}
               handleLogout={handleLogout}
               handleImageChange={handleImageChange}
+              imagePreview={imagePreview}
             />
             <AchievementsCard achievements={profile?.achievements || []} />
           </div>

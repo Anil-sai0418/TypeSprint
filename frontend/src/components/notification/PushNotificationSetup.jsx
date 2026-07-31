@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { requestForToken, onMessageListener } from '../../firebase';
 import { useAuth } from '../../context/useAuth';
 import { registerDeviceToken } from '../../services/api';
@@ -8,20 +8,25 @@ import { Bell, X, Award, Trophy, Info } from 'lucide-react';
 const PushNotificationSetup = () => {
   const { user, isAuthenticated } = useAuth();
   const [toasts, setToasts] = useState([]);
+  const registeredTokenRef = useRef(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
     
-    if (isAuthenticated || storedToken) {
+    if (isAuthenticated && storedToken) {
       // Request permission and get token
       requestForToken().then(async (token) => {
         if (token) {
-           // Send the token to the backend
-           try {
-             await registerDeviceToken(token, storedToken);
-           } catch (error) {
-             console.error("Error registering token:", error);
-           }
+          const registrationKey = `${token}_${storedToken}`;
+          if (registeredTokenRef.current === registrationKey) return;
+          registeredTokenRef.current = registrationKey;
+
+          try {
+            await registerDeviceToken(token, storedToken);
+          } catch (error) {
+            registeredTokenRef.current = null;
+            console.error("Error registering token:", error);
+          }
         }
       });
     }

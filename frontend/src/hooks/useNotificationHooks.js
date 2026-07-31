@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNotification } from '../context/NotificationContext';
 import { getLeaderboard, getFullUserProfile } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../lib/queryKeys';
 
 // Hook to track user activity and send inactivity reminders
 export const useActivityTracking = ({ enabled = true, userEmail } = {}) => {
@@ -64,11 +65,18 @@ export const useLeaderboardTracking = ({ enabled = true, userEmail } = {}) => {
 
     const checkRank = async () => {
       try {
-        const response = await queryClient.fetchQuery({
-          queryKey: ['leaderboard', 200],
-          queryFn: () => getLeaderboard(200),
-          staleTime: 55 * 1000 // Only fetch network if data is older than 55 seconds. Otherwise returns cache.
-        });
+        // Lazy loading: check existing query cache first before issuing network requests on boot
+        let response = queryClient.getQueryData(queryKeys.leaderboard(200)) ||
+                       queryClient.getQueryData(queryKeys.leaderboard(100));
+
+        if (!response) {
+          // Only fetch from network if explicitly enabled and user is actively on leaderboard
+          response = await queryClient.fetchQuery({
+            queryKey: queryKeys.leaderboard(200),
+            queryFn: () => getLeaderboard(200),
+            staleTime: 55 * 1000
+          });
+        }
         
         if (!response?.success) {
           return;
@@ -140,13 +148,14 @@ export const useStreakTracking = ({ enabled = true, userEmail, token } = {}) => 
     const checkStreak = async () => {
       try {
         const response = await queryClient.fetchQuery({
-          queryKey: ['userProfile', userEmail],
+          queryKey: queryKeys.userProfile(userEmail),
           queryFn: () => getFullUserProfile(userEmail, token),
           staleTime: 5 * 60 * 1000 // 5 minutes cache
         });
         
-        if (response?.success && response.userProfile) {
-          const currentStreak = response.userProfile?.streak || 0;
+        if (response?.success) {
+          const profileData = response.profile || response.user;
+          const currentStreak = profileData?.streak || 0;
 
           if (previousStreakRef.current === null) {
             // First check - just store the streak
@@ -196,13 +205,14 @@ export const useAchievementTracking = ({ enabled = true, userEmail, token } = {}
     const checkAchievements = async () => {
       try {
         const response = await queryClient.fetchQuery({
-          queryKey: ['userProfile', userEmail],
+          queryKey: queryKeys.userProfile(userEmail),
           queryFn: () => getFullUserProfile(userEmail, token),
           staleTime: 5 * 60 * 1000 // 5 minutes cache
         });
         
-        if (response?.success && response.userProfile?.achievements) {
-          const currentAchievements = response.userProfile.achievements;
+        if (response?.success) {
+          const profileData = response.profile || response.user;
+          const currentAchievements = profileData?.achievements || [];
 
           if (previousAchievementsRef.current === null) {
             // First check - just store the achievements

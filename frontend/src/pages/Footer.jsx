@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getLikeStatus, toggleLike, getLikeCount } from '../services/api';
+import { useLikeCountQuery, useLikeStatusQuery, useToggleLikeMutation } from '../hooks/useQueries';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
@@ -29,10 +29,19 @@ function Footer({ isLoggedIn = false }) {
     type: "unknown",
     downlink: null,
   });
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [isLikeLoading, setIsLikeLoading] = useState(true);
+  const email = localStorage.getItem("userEmail");
+  const token = localStorage.getItem("token");
+
+  const { data: likeCountRes, isLoading: isCountLoading } = useLikeCountQuery();
+  const { data: likeStatusRes, isLoading: isStatusLoading } = useLikeStatusQuery(email, token, {
+    enabled: Boolean(isLoggedIn && email && token)
+  });
+  const toggleLikeMutation = useToggleLikeMutation();
+
+  const likes = likeCountRes?.success ? likeCountRes.totalLikes : 0;
+  const liked = (isLoggedIn && likeStatusRes?.success) ? Boolean(likeStatusRes.userLiked) : false;
+  const isLikeLoading = isCountLoading || (isLoggedIn && isStatusLoading);
+
   const [showToast, setShowToast] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
@@ -51,42 +60,11 @@ function Footer({ isLoggedIn = false }) {
   const currentLangCode = i18n?.language?.split('-')[0] || localStorage.getItem('i18nextLng') || 'en';
   const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === currentLangCode) || SUPPORTED_LANGUAGES[0];
 
-  // Fetch like status and count
   useEffect(() => {
     // Sync document direction with initialized language when mounted or when language changes
     document.documentElement.dir = i18n.dir();
     document.documentElement.lang = i18n.language || 'en';
-
-    const fetchLikeData = async () => {
-      setIsLikeLoading(true);
-      try {
-        // Get total likes count
-        const countRes = await getLikeCount();
-        if (countRes.success) {
-          setLikes(countRes.totalLikes);
-        }
-
-        // Get user like status if logged in
-        if (isLoggedIn) {
-          const email = localStorage.getItem("userEmail");
-          const token = localStorage.getItem("token");
-          
-          if (email && token) {
-            const statusRes = await getLikeStatus(email, token);
-            if (statusRes.success) {
-              setLiked(statusRes.userLiked);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching like data:", error);
-      } finally {
-        setIsLikeLoading(false);
-      }
-    };
-
-    fetchLikeData();
-  }, [isLoggedIn, i18n]);
+  }, [i18n]);
 
   // Connection status tracking
   useEffect(() => {
@@ -141,7 +119,6 @@ function Footer({ isLoggedIn = false }) {
     };
   }, []);
 
-  // Handle like toggle
   const handleLikeClick = async () => {
     if (!isLoggedIn) {
       toast.error("Please login to like this application");
@@ -149,15 +126,11 @@ function Footer({ isLoggedIn = false }) {
     }
 
     try {
-      setLoading(true);
       const email = localStorage.getItem("userEmail");
       const token = localStorage.getItem("token");
 
-      const res = await toggleLike(email, token);
-      if (res.success) {
-        setLiked(res.userLiked);
-        setLikes(res.totalLikes);
-        
+      const res = await toggleLikeMutation.mutateAsync({ email, token });
+      if (res?.success) {
         if (res.userLiked) {
           // Trigger Confetti Effect
           const duration = 2500;
@@ -422,7 +395,7 @@ function Footer({ isLoggedIn = false }) {
       ) : (
         <button
           onClick={handleLikeClick}
-          disabled={loading || !isLoggedIn}
+          disabled={toggleLikeMutation.isPending || !isLoggedIn}
           className={`
               w-full relative group overflow-hidden rounded-xl border transition-all duration-300
               px-4 py-3 flex items-center justify-center gap-2

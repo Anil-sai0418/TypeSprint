@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navigation from "../components/ui/Navigation";
 import Footer from "./Footer";
 import PerformanceBadge from './result/components/PerformanceBadge';
@@ -7,7 +7,8 @@ import DetailedStats from './result/components/DetailedStats';
 import PerformanceBreakdown from './result/components/PerformanceBreakdown';
 import WpmChart from './result/components/WpmChart';
 import ActionButtons from './result/components/ActionButtons';
-import { saveTestResult, incrementContributionActivity } from '../services/api';
+import { incrementContributionActivity } from '../services/api';
+import { useSaveTestResultMutation } from '../hooks/useQueries';
 
 export default function Result({
   testResults = null,
@@ -19,6 +20,7 @@ export default function Result({
 }) {
   const [results, setResults] = useState(null);
   const [showChart, setShowChart] = useState(true);
+  const savedTestRef = useRef(null);
 
   // Global Keybindings for Results page
   useEffect(() => {
@@ -43,10 +45,17 @@ export default function Result({
   useEffect(() => {
     if (testResults) {
       setResults(testResults);
+
+      const testKey = `${testResults.netWpm}_${testResults.accuracy}_${testResults.totalTimeTaken}_${testResults.timestamp || ''}`;
+      if (savedTestRef.current === testKey) return;
+      savedTestRef.current = testKey;
+
       // Save test results to backend
       saveTestToBackend(testResults);
     }
   }, [testResults]);
+
+  const saveTestMutation = useSaveTestResultMutation();
 
   const saveTestToBackend = async (testData) => {
     try {
@@ -66,7 +75,7 @@ export default function Result({
         raw: testData.rawWpm || 0,
       };
 
-      await saveTestResult(payload, token);
+      await saveTestMutation.mutateAsync({ testData: payload, token });
 
       // Increment contribution heatmap
       await incrementContributionActivity(email, { wpm: testData.netWpm, accuracy: testData.accuracy }, token);

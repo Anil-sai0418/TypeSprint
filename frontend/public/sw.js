@@ -38,13 +38,19 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Don't cache API calls - always fetch fresh
-  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/auth') || 
-      url.pathname.startsWith('/profile') || url.pathname.startsWith('/typing-test')) {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request))
-    );
-    return;
+  // Completely bypass Service Worker for backend API calls or cross-origin requests
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/api') || 
+    url.pathname.startsWith('/auth') || 
+    url.pathname.startsWith('/profile') || 
+    url.pathname.startsWith('/typing-test') ||
+    url.pathname.startsWith('/notifications') ||
+    url.pathname.startsWith('/like') ||
+    url.pathname.startsWith('/contribution') ||
+    url.pathname.startsWith('/random-text')
+  ) {
+    return; // Direct browser network fetch
   }
 
   // For HTML files, always fetch fresh

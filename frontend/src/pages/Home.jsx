@@ -8,6 +8,7 @@ import Footer from "./Footer";
 import Result from "./Result";
 import { useTranslation } from "react-i18next";
 import { fetchRandomText } from "../services/api";
+import MonkeytypeTextDisplay from "../components/MonkeytypeTextDisplay";
 import {
   generateWPMGraphData,
   trackKeystroke,
@@ -27,9 +28,22 @@ const useTypingEngine = (settings) => {
   const timerRef = useRef(null);
   const keystrokesRef = useRef([]);
   const statsRef = useRef({ totalCorrect: 0, totalError: 0 }); // OPTIMIZATION: Track in ref for O(1) access
+  const loadedSettingsKeyRef = useRef("");
+  const isFetchingRef = useRef(false);
 
-  // OPTIMIZATION: Fetch Text with memoized settings
-  const loadTest = useCallback(async () => {
+  // Fetch text based on active settings (Time Mode vs Words Mode)
+  const loadTest = useCallback(async (force = false) => {
+    const { timeLimit, wordLimit, showPunctuation, showNumbers } = settings;
+    const settingsKey = `${timeLimit}_${wordLimit}_${showPunctuation}_${showNumbers}`;
+
+    // Prevent duplicate fetch for identical settings or while already fetching
+    if (!force && (isFetchingRef.current || (loadedSettingsKeyRef.current === settingsKey && words.length > 0))) {
+      return;
+    }
+
+    isFetchingRef.current = true;
+    loadedSettingsKeyRef.current = settingsKey;
+
     setIsLoading(true);
     setStatus("idle");
     setWpmHistory([]);
@@ -40,16 +54,24 @@ const useTypingEngine = (settings) => {
     statsRef.current = { totalCorrect: 0, totalError: 0 };
 
     try {
-      const { wordLimit, showPunctuation, showNumbers } = settings;
-      const data = await fetchRandomText(wordLimit, showPunctuation.toString(), showNumbers.toString());
-      setWords(data.text.split("")); 
+      // In time mode, fetch a large word pool (250 words) so text never runs out early
+      const fetchCount = timeLimit ? 250 : (wordLimit || 50);
+      const data = await fetchRandomText(fetchCount, showPunctuation.toString(), showNumbers.toString());
+      if (data && data.text) {
+        setWords(data.text.split("")); 
+      }
     } catch (e) {
       console.error('Failed to fetch random text:', e);
       setWords("Error loading text. Please check your connection.".split(""));
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [settings]);
+  }, [settings, words.length]);
+
+  const restart = useCallback(() => {
+    loadTest(true);
+  }, [loadTest]);
 
   const retype = useCallback(() => {
     setStatus("idle");
@@ -59,17 +81,16 @@ const useTypingEngine = (settings) => {
     setEndTime(null);
     keystrokesRef.current = [];
     statsRef.current = { totalCorrect: 0, totalError: 0 };
-    // We intentionally don't clear or change the `words` state here
   }, []);
 
-  // OPTIMIZATION: Efficient timer with early exit
+  // Timer for Time Mode
   useEffect(() => {
     if (status !== "running" || !settings.timeLimit) return;
 
     const checkTimeLimit = () => {
       const elapsed = (Date.now() - startTime) / 1000;
       if (elapsed >= settings.timeLimit) {
-        clearInterval(timerRef.current);
+        if (timerRef.current) clearInterval(timerRef.current);
         const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
         setWpmHistory(graphData);
         setStatus("completed");
@@ -77,8 +98,10 @@ const useTypingEngine = (settings) => {
       }
     };
 
-    timerRef.current = setInterval(checkTimeLimit, 1000);
-    return () => clearInterval(timerRef.current);
+    timerRef.current = setInterval(checkTimeLimit, 250);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [status, startTime, settings.timeLimit]);
 
   const startTest = useCallback(() => {
@@ -90,34 +113,22 @@ const useTypingEngine = (settings) => {
     }
   }, [status]);
 
-  // Auto-start timer-based tests so time runs even without typing
-  useEffect(() => {
-    if (isLoading) return;
-    if (status !== "idle") return;
-    if (!settings.timeLimit) return;
-    if (words.length === 0) return;
-    startTest();
-  }, [isLoading, status, settings.timeLimit, words.length, startTest]);
-
-  // OPTIMIZATION: Single-pass keystroke tracking with ref caching
+  // Handle Keystroke Input
   const handleInput = useCallback((val) => {
     if (status === "completed" || isLoading) return;
     if (status === "idle") startTest();
-    if (val.length > words.length) return;
 
     const prevLength = input.length;
     const currentLength = val.length;
 
-    // OPTIMIZATION: Minimize array operations - use splice instead of multiple pushes
     if (currentLength > prevLength) {
       const newKeystrokes = [];
       for (let i = prevLength; i < currentLength; i++) {
         const typedChar = val[i];
-        const expectedChar = words[i];
+        const expectedChar = words[i] || '';
         const keystroke = trackKeystroke(Date.now(), expectedChar, typedChar, false);
         newKeystrokes.push(keystroke);
         
-        // OPTIMIZATION: Track stats inline
         if (keystroke.isCorrect) statsRef.current.totalCorrect++;
         else if (keystroke.isError) statsRef.current.totalError++;
       }
@@ -131,14 +142,31 @@ const useTypingEngine = (settings) => {
     
     setInput(val);
 
-    // OPTIMIZATION: Check completion without re-calculating
-    if (val.length === words.length && words.length > 0) {
-      const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
-      setWpmHistory(graphData);
-      setStatus("completed");
-      setEndTime(Date.now());
+    // Automatic submission ONLY in Words Mode (Time mode relies strictly on timer expiry)
+    if (!settings.timeLimit && settings.wordLimit) {
+      const fullText = words.join("");
+      if (fullText.length > 0) {
+        const targetWordsList = fullText.split(" ");
+        const typedWordsList = val.split(" ");
+        const isLastWord = typedWordsList.length >= targetWordsList.length;
+        const lastTypedWord = typedWordsList[typedWordsList.length - 1] || "";
+        const lastTargetWord = targetWordsList[targetWordsList.length - 1] || "";
+
+        const isFinished = isLastWord && (
+          lastTypedWord.length >= lastTargetWord.length || 
+          val.endsWith(" ") ||
+          val.length >= words.length
+        );
+
+        if (isFinished) {
+          const graphData = generateWPMGraphData(keystrokesRef.current, startTime);
+          setWpmHistory(graphData);
+          setStatus("completed");
+          setEndTime(Date.now());
+        }
+      }
     }
-  }, [status, isLoading, input.length, words, startTest, startTime]);
+  }, [status, isLoading, input.length, words, startTest, startTime, settings]);
 
   // OPTIMIZATION: Memoized stats calculation - only recompute on ref or status change
   const stats = useMemo(() => {
@@ -228,12 +256,44 @@ export default function TypingTest() {
   const { t } = useTranslation();
   const inputRef = useRef(null);
   const [isFocused, setIsFocused] = useState(true);
-  const [settings, setSettings] = useState({
-    timeLimit: null, 
+  const DEFAULT_SETTINGS = useMemo(() => ({
+    mode: 'time',
+    timeLimit: 30,
     wordLimit: null,
     showPunctuation: false,
     showNumbers: false,
+  }), []);
+
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem("monkeytype_settings");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          mode: parsed.wordLimit ? 'words' : 'time',
+          timeLimit: parsed.timeLimit || (parsed.wordLimit ? null : 30),
+          wordLimit: parsed.wordLimit || null,
+          showPunctuation: Boolean(parsed.showPunctuation),
+          showNumbers: Boolean(parsed.showNumbers),
+        };
+      }
+    } catch (e) {
+      console.error("Failed to load settings:", e);
+    }
+    return DEFAULT_SETTINGS;
   });
+
+  const updateSettings = useCallback((newPartial) => {
+    setSettings((prev) => {
+      const updated = { ...prev, ...newPartial };
+      try {
+        localStorage.setItem("monkeytype_settings", JSON.stringify(updated));
+      } catch (e) {
+        console.error("Failed to save settings:", e);
+      }
+      return updated;
+    });
+  }, []);
 
   const { 
     status, 
@@ -371,154 +431,119 @@ export default function TypingTest() {
       : "opacity-100 translate-y-0"}
     `}
   >
-  <div 
-    ref={toolbarRef}
-    className="relative rounded-2xl p-px overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] hover:shadow-[0_28px_80px_rgba(0,0,0,0.25)] transition-shadow duration-300 ease-out transform-gpu"
-  >
-    {/* Rotating Light Element - OPTIMIZED to entirely unmount or freeze when not needed */}
-    {shouldAnimateBorder && (
-      <div 
-        className="absolute -inset-[150%] rotate-animation bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_80%,#52525b_100%)] dark:bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_80%,#a1a1aa_100%)] will-change-transform"
-        style={{
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-          contain: 'strict'
-        }}
-      />
-    )}
-    
+    {/* Authentic Polished Monkeytype Toolbar */}
     <div
       className="
         relative
         h-full w-full
-        flex flex-wrap items-center justify-center gap-4 sm:gap-6 px-4 sm:px-10 py-3
+        flex flex-wrap items-center justify-center gap-3 sm:gap-6 px-4 sm:px-8 py-2.5
         rounded-[15px]
-        bg-background
+        bg-background/90
         backdrop-blur-2xl
+        text-xs sm:text-sm font-mono font-medium
+        text-muted-foreground
       "
     >
-      <span className="
-        pointer-events-none absolute inset-x-6 -top-px h-px
-        bg-linear-to-r from-transparent via-border/50 to-transparent
-      " />
-
-    {/* Group 1: Toggles */}
-  <div className="relative flex items-center gap-2 p-1.5 rounded-xl bg-muted/30 border border-border/40">
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setSettings((s) => ({ ...s, showPunctuation: !s.showPunctuation }))}
-      className={`
-        h-9 w-12 rounded-md 
-        transition-all duration-200
-        ${settings.showPunctuation
-          ? "bg-background text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground"}
-        data-[state=on]:scale-[1.03]
-        active:scale-[0.97]
-      `}
-    >
-      <Type className="w-4 h-4" strokeWidth={settings.showPunctuation ? 2.5 : 2} />
-    </Button>
-
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setSettings((s) => ({ ...s, showNumbers: !s.showNumbers }))}
-      className={`
-        h-9 w-12 rounded-md
-        transition-all duration-200
-        ${settings.showNumbers
-          ? "bg-background text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground"}
-        data-[state=on]:scale-[1.03]
-        active:scale-[0.97]
-      `}
-    >
-      <Hash className="w-4 h-4" strokeWidth={settings.showNumbers ? 2.5 : 2} />
-    </Button>
-  </div>
-
-    {/* Divider */}
-    <div className="hidden sm:block w-px h-6 bg-border/60 mx-2" />
-
-    {/* Group 2: Mode Selectors */}
-    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5">
-      
-      {/* Time Selector */}
-      <Select
-        value={settings.timeLimit ? settings.timeLimit.toString() : "placeholder"}
-        onValueChange={(v) =>
-          setSettings((s) => ({ ...s, timeLimit: parseInt(v), wordLimit: null }))
-        }
-      >
-        <SelectTrigger
-          className={`
-            h-9 min-w-18 px-3 gap-2
-            rounded-md
-            border border-border/60
-            bg-transparent
-            text-sm font-medium
-            text-foreground
-            shadow-none
-            transition-all duration-200
-            hover:border-border
-            hover:bg-muted/30
-            focus:outline-none focus:ring-0 focus:ring-offset-0
-            data-[state=open]:border-border
-            data-[state=open]:bg-muted/40
-          `}
+      {/* Group 1: Punctuation & Numbers Toggles */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        <button
+          type="button"
+          onClick={() => updateSettings({ showPunctuation: !settings.showPunctuation })}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            settings.showPunctuation 
+              ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 font-semibold shadow-xs' 
+              : 'hover:text-foreground hover:bg-muted/40'
+          }`}
         >
-          <Clock className="w-4 h-4 text-muted-foreground" />
-          <span className="tracking-wide">
-            {settings.timeLimit ? `${settings.timeLimit}${t('home.seconds')}` : t('home.time')}
-          </span>
-        </SelectTrigger>
-        <SelectContent align="center" className="min-w-20">
-          <SelectItem value="15">15{t('home.seconds')}</SelectItem>
-          <SelectItem value="30">30{t('home.seconds')}</SelectItem>
-          <SelectItem value="60">60{t('home.seconds')}</SelectItem>
-        </SelectContent>
-      </Select>
+          <Type className="w-3.5 h-3.5" />
+          <span>punctuation</span>
+        </button>
 
-      {/* Words Selector */}
-      <Select
-        value={settings.wordLimit ? settings.wordLimit.toString() : "placeholder"}
-        onValueChange={(v) =>
-          setSettings((s) => ({ ...s, wordLimit: parseInt(v), timeLimit: null }))
-        }
-      >
-        <SelectTrigger
-          className={`
-            h-9 min-w-21 px-3 gap-2
-            rounded-md
-            border border-border/60
-            bg-transparent
-            text-sm font-medium
-            text-foreground
-            shadow-none
-            transition-all duration-200
-            hover:border-border
-            hover:bg-muted/30
-            focus:outline-none focus:ring-0 focus:ring-offset-0
-            data-[state=open]:border-border
-            data-[state=open]:bg-muted/40
-          `}
+        <button
+          type="button"
+          onClick={() => updateSettings({ showNumbers: !settings.showNumbers })}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            settings.showNumbers 
+              ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 font-semibold shadow-xs' 
+              : 'hover:text-foreground hover:bg-muted/40'
+          }`}
         >
-          <span className="tracking-wide">
-            {settings.wordLimit ? `${settings.wordLimit}` : t('home.words')}
-          </span>
-        </SelectTrigger>
-        <SelectContent align="center" className="min-w-20">
-          <SelectItem value="25">25 {t('home.words_count')}</SelectItem>
-          <SelectItem value="50">50 {t('home.words_count')}</SelectItem>
-          <SelectItem value="100">100 {t('home.words_count')}</SelectItem>
-        </SelectContent>
-      </Select>
+          <Hash className="w-3.5 h-3.5" />
+          <span>numbers</span>
+        </button>
+      </div>
+
+      {/* Divider */}
+      <div className="hidden sm:block w-px h-4 bg-border/60" />
+
+      {/* Group 2: Mode Selectors (Time vs Words) */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        <button
+          type="button"
+          onClick={() => updateSettings({ mode: 'time', timeLimit: settings.timeLimit || 30, wordLimit: null })}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            settings.mode === 'time'
+              ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 font-semibold shadow-xs'
+              : 'hover:text-foreground hover:bg-muted/40'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>time</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => updateSettings({ mode: 'words', wordLimit: settings.wordLimit || 25, timeLimit: null })}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+            settings.mode === 'words'
+              ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 font-semibold shadow-xs'
+              : 'hover:text-foreground hover:bg-muted/40'
+          }`}
+        >
+          <AlignLeft className="w-3.5 h-3.5" />
+          <span>words</span>
+        </button>
+      </div>
+
+      {/* Divider */}
+      <div className="hidden sm:block w-px h-4 bg-border/60" />
+
+      {/* Group 3: Sub-Options (Pill Values) */}
+      <div className="flex items-center gap-1 sm:gap-1.5">
+        {settings.mode === 'time' ? (
+          [15, 30, 60, 120].map((val) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => updateSettings({ timeLimit: val, wordLimit: null })}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${
+                settings.timeLimit === val
+                  ? 'text-amber-500 dark:text-amber-400 font-bold bg-amber-500/10 shadow-xs'
+                  : 'hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {val}
+            </button>
+          ))
+        ) : (
+          [10, 25, 50, 100].map((val) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => updateSettings({ wordLimit: val, timeLimit: null })}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${
+                settings.wordLimit === val
+                  ? 'text-amber-500 dark:text-amber-400 font-bold bg-amber-500/10 shadow-xs'
+                  : 'hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              {val}
+            </button>
+          ))
+        )}
+      </div>
+      </div>
     </div>
-  </div>
-  </div>
-</div>
 
       {/* --- Main Area --- */}
       <main className="flex-1 flex flex-col font-mono items-center justify-center relative px-4 sm:px-8">
@@ -555,34 +580,13 @@ export default function TypingTest() {
             </div>
           )}
           {!isLoading && (
-            <div className={`wrap-break-word select-none transition-opacity duration-200 ${!isFocused && !isReplaying ? "blur-sm opacity-50" : "opacity-100"}`}>
-              {words.map((char, i) => {
-                const isCurrent = i === displayInput.length;
-                const isTyped = i < displayInput.length;
-                const isCorrect = isTyped && displayInput[i] === char;
-                const isWrong = isTyped && displayInput[i] !== char;
-
-                return (
-                  <span key={i} className="relative">
-                    {/* The Cursor */}
-                    {isCurrent && (isFocused || isReplaying) && (
-                      <span className="absolute -left-0.5 top-1 bottom-1 w-0.5 bg-primary animate-pulse rounded-full" />
-                    )}
-                    
-                    {/* The Character */}
-                    <span className={`
-                      ${isCurrent ? 'text-foreground underline decoration-primary/30' : ''}
-                      ${isCorrect ? 'text-foreground' : ''}
-                      ${isWrong ? 'text-destructive' : ''}
-                      ${!isTyped && !isCurrent ? 'text-muted-foreground/40' : ''}
-                      transition-colors duration-100
-                    `}>
-                      {char}
-                    </span>
-                  </span>
-                );
-              })}
-            </div>
+            <MonkeytypeTextDisplay
+              words={words}
+              displayInput={displayInput}
+              isFocused={isFocused}
+              isReplaying={isReplaying}
+              onFocusInput={() => inputRef.current?.focus()}
+            />
           )}
 
           {/* Hidden Input */}
