@@ -210,20 +210,32 @@ if (enableCluster && cluster.isMaster) {
     });
   };
 
-  sequelize.sync(syncOptions).then(() => {
-    logger.db.connected({ mode: process.env.NODE_ENV || 'development' });
-    startServer();
-  }).catch(err => {
-    logger.db.queryFailed(err, { context: 'DB Sync' });
-    // Fallback: connect even if sync warnings occur
-    sequelize.authenticate().then(() => {
-      logger.db.connected({ mode: 'Fallback Auth' });
+  const shouldSync = process.env.NODE_ENV !== 'production' || process.env.DB_SYNC === 'true';
+
+  if (shouldSync) {
+    sequelize.sync(syncOptions).then(() => {
+      logger.db.connected({ mode: process.env.NODE_ENV || 'development' });
       startServer();
-    }).catch(authErr => {
-      logger.db.queryFailed(authErr, { context: 'DB Connection Failed' });
+    }).catch(err => {
+      logger.db.queryFailed(err, { context: 'DB Sync' });
+      sequelize.authenticate().then(() => {
+        logger.db.connected({ mode: 'Fallback Auth' });
+        startServer();
+      }).catch(authErr => {
+        logger.db.queryFailed(authErr, { context: 'DB Connection Failed' });
+        process.exit(1);
+      });
+    });
+  } else {
+    // Production mode: Lightweight connection check without firing heavy schema inspection queries
+    sequelize.authenticate().then(() => {
+      logger.db.connected({ mode: 'Production Auth' });
+      startServer();
+    }).catch(err => {
+      logger.db.queryFailed(err, { context: 'Production DB Connection Failed' });
       process.exit(1);
     });
-  });
+  }
 }
 
 module.exports = app;
