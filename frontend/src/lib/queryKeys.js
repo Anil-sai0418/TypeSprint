@@ -9,7 +9,7 @@ export const queryKeys = {
   userActivity: (email) => ['userActivity', email],
 
   // Leaderboard
-  leaderboard: (limit = 100) => ['leaderboard', limit],
+  leaderboard: (params = 10) => ['leaderboard', typeof params === 'object' ? params : { limit: params }],
 
   // Text generation
   randomText: (wordLimit, includePunctuation, includeNumbers) => [

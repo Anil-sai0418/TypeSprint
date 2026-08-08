@@ -148,15 +148,20 @@ const useTypingEngine = (settings) => {
       if (fullText.length > 0) {
         const targetWordsList = fullText.split(" ");
         const typedWordsList = val.split(" ");
-        const isLastWord = typedWordsList.length >= targetWordsList.length;
-        const lastTypedWord = typedWordsList[typedWordsList.length - 1] || "";
-        const lastTargetWord = targetWordsList[targetWordsList.length - 1] || "";
+        const totalTargetWords = targetWordsList.length;
 
-        const isFinished = isLastWord && (
-          lastTypedWord.length >= lastTargetWord.length || 
-          val.endsWith(" ") ||
-          val.length >= words.length
-        );
+        const lastTypedWordIndex = typedWordsList.length - 1;
+        const lastTypedWord = typedWordsList[lastTypedWordIndex] || "";
+        const lastTargetWord = targetWordsList[totalTargetWords - 1] || "";
+
+        const isFinished = 
+          val.length >= fullText.length ||
+          typedWordsList.length > totalTargetWords ||
+          (
+            typedWordsList.length === totalTargetWords &&
+            lastTypedWord.length > 0 &&
+            (lastTypedWord.length >= lastTargetWord.length || val.endsWith(" "))
+          );
 
         if (isFinished) {
           const graphData = generateWPMGraphData(keystrokesRef.current, startTime);

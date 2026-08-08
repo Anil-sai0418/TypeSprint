@@ -52,10 +52,10 @@ export const useUpdateProfileMutation = () => {
 
 // --- LEADERBOARD HOOKS ---
 
-export const useLeaderboardQuery = (limit = 100, options = {}) => {
+export const useLeaderboardQuery = (params = 10, options = {}) => {
   return useQuery({
-    queryKey: queryKeys.leaderboard(limit),
-    queryFn: () => getLeaderboard(limit),
+    queryKey: queryKeys.leaderboard(params),
+    queryFn: () => getLeaderboard(params),
     staleTime: 2 * 60 * 1000, // 2 minutes
     ...options
   });

@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/ui/Navigation";
 import Footer from "./Footer";
 import { useLeaderboardQuery } from "../hooks/useQueries";
-import { Zap, TrendingUp, Flame, Target, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -17,21 +17,33 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Leaderboard() {
   const { t } = useTranslation();
-  const [allLeaders, setAllLeaders] = useState([]);
-  const [filteredLeaders, setFilteredLeaders] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const debounceRef = useRef(null);
-
+  const [sortBy, setSortBy] = useState("peak");
   const [expandedRow, setExpandedRow] = useState(null);
 
+  const debounceRef = useRef(null);
   const searchInputRef = useRef(null);
 
   // OS detection for shortcut hint
   const [isMac, setIsMac] = useState(false);
   const [showShortcutPulse, setShowShortcutPulse] = useState(false);
+
+  const itemsPerPage = 10;
+
+  // Server-side query with search, sort, and pagination parameters
+  const { data: qData, isLoading, error } = useLeaderboardQuery({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debouncedQuery,
+    sortBy,
+  });
+
+  const currentLeaders = qData?.leaderboard || [];
+  const totalCount = qData?.total || 0;
+  const totalPages = qData?.totalPages || 1;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -63,54 +75,11 @@ export default function Leaderboard() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMac]);
 
-  // Sort state
-  const [sortBy, setSortBy] = useState("peak");
-  
-  const itemsPerPage = 10;
-
-  const { data: qData, isLoading, error } = useLeaderboardQuery(100);
-
-  useEffect(() => {
-    if (qData?.success) {
-      setAllLeaders(qData.leaderboard);
-      setCurrentPage(1);
-    }
-  }, [qData]);
-
-  const filterLeaders = useCallback(() => {
-    let filtered = allLeaders;
-
-    // Filter by name
-    if (debouncedQuery.trim()) {
-      filtered = allLeaders.filter((leader) =>
-        leader.name.toLowerCase().includes(debouncedQuery.toLowerCase())
-      );
-    }
-
-    // Sort
-    if (sortBy === "peak") {
-      filtered = [...filtered].sort((a, b) => b.peakWpm - a.peakWpm);
-    } else if (sortBy === "avg") {
-      filtered = [...filtered].sort((a, b) => b.avgWpm - a.avgWpm);
-    } else if (sortBy === "accuracy") {
-      filtered = [...filtered].sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0));
-    } else if (sortBy === "streak") {
-      filtered = [...filtered].sort((a, b) => b.streak - a.streak);
-    }
-
-    setFilteredLeaders(filtered);
-    setCurrentPage(1); // Reset to first page when search changes
-  }, [allLeaders, debouncedQuery, sortBy]);
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("userEmail");
     setIsLoggedIn(!!(token && email));
   }, []);
-
-  useEffect(() => {
-    filterLeaders();
-  }, [filterLeaders]);
 
   const handleSearch = (e) => {
     const value = e.target.value;
@@ -122,14 +91,16 @@ export default function Leaderboard() {
 
     debounceRef.current = setTimeout(() => {
       setDebouncedQuery(value);
+      setCurrentPage(1); // Reset page on new search
     }, 400);
   };
 
-  // Pagination
-  const totalPages = Math.ceil(filteredLeaders.length / itemsPerPage);
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+    setCurrentPage(1); // Reset page on new sort
+  };
+
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentLeaders = filteredLeaders.slice(startIndex, endIndex);
 
   const getMedalIcon = (rank) => {
     if (rank === 1) return "🥇";
@@ -151,7 +122,7 @@ export default function Leaderboard() {
 
       <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
         
-        {/* Premium Header with filter/sort */}
+        {/* Header with filter/sort */}
         {isLoading ? (
           <div className="space-y-8 py-6">
             {/* Header Skeleton */}
@@ -175,10 +146,7 @@ export default function Leaderboard() {
                   key={i}
                   className="grid grid-cols-7 gap-4 items-center px-4 py-3 border-t"
                 >
-                  {/* Rank */}
                   <Skeleton className="h-6 w-10" />
-
-                  {/* Player */}
                   <div className="flex items-center gap-3 col-span-2">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="space-y-2">
@@ -186,20 +154,10 @@ export default function Leaderboard() {
                       <Skeleton className="h-3 w-32" />
                     </div>
                   </div>
-
-                  {/* Peak */}
                   <Skeleton className="h-6 w-14 justify-self-end" />
-
-                  {/* Avg */}
                   <Skeleton className="h-6 w-14 justify-self-end" />
-
-                  {/* Accuracy */}
                   <Skeleton className="h-4 w-10 justify-self-end" />
-
-                  {/* Streak */}
                   <Skeleton className="h-6 w-12 justify-self-end" />
-
-                  {/* Tests */}
                   <Skeleton className="h-6 w-12 justify-self-end" />
                 </div>
               ))}
@@ -207,91 +165,67 @@ export default function Leaderboard() {
           </div>
         ) : (
           <>
-            {/* Premium Header with filter/sort */}
-            {!isLoading && (
-              <div className="mb-10">
-                <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h1 className="text-4xl font-bold tracking-tight mb-1">{t('leaderboard.title')}</h1>
-                    <p className="text-muted-foreground">
-                      {t('leaderboard.subtitle', { count: filteredLeaders.length })}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                    <div className="relative w-full sm:w-64">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-
-                      <Input
-                        ref={searchInputRef}
-                        placeholder={t('leaderboard.search_placeholder')}
-                        value={searchQuery}
-                        onChange={handleSearch}
-                        onFocus={(e) => e.target.select()}
-                        className="pl-10 pr-10 sm:pr-16 h-10 w-full"
-                      />
-
-                      <span
-                        className={`hidden sm:inline-flex pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-transform duration-300 ${
-                          showShortcutPulse ? "scale-110" : "scale-100"
-                        }`}
-                      >
-                        {isMac ? "⌘ K" : "Ctrl K"}
-                      </span>
-                    </div>
-
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    >
-                      <option value="peak">Sort by Peak WPM</option>
-                      <option value="avg">Sort by Avg WPM</option>
-                      <option value="accuracy">Sort by Accuracy</option>
-                      <option value="streak">Sort by Streak</option>
-                    </select>
-                  </div>
+            <div className="mb-10">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-4xl font-bold tracking-tight mb-1">{t('leaderboard.title')}</h1>
+                  <p className="text-muted-foreground">
+                    {t('leaderboard.subtitle', { count: totalCount })}
+                  </p>
                 </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
+                    <Input
+                      ref={searchInputRef}
+                      placeholder={t('leaderboard.search_placeholder')}
+                      value={searchQuery}
+                      onChange={handleSearch}
+                      onFocus={(e) => e.target.select()}
+                      className="pl-10 pr-10 sm:pr-16 h-10 w-full"
+                    />
+
+                    <span
+                      className={`hidden sm:inline-flex pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-transform duration-300 ${
+                        showShortcutPulse ? "scale-110" : "scale-100"
+                      }`}
+                    >
+                      {isMac ? "⌘ K" : "Ctrl K"}
+                    </span>
+                  </div>
+
+                  <select
+                    value={sortBy}
+                    onChange={handleSortChange}
+                    className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  >
+                    <option value="peak">Sort by Peak WPM</option>
+                    <option value="avg">Sort by Avg WPM</option>
+                    <option value="accuracy">Sort by Accuracy</option>
+                    <option value="streak">Sort by Streak</option>
+                    <option value="tests">Sort by Total Tests</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Error State */}
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-6 text-center">
+                <p className="text-destructive mb-4">{error.message || "Error loading leaderboard. Make sure backend is running."}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-2 bg-destructive hover:bg-destructive/90 text-white rounded-lg font-medium transition"
+                >
+                  Retry
+                </button>
               </div>
             )}
 
-        {/* Error State */}
-        {error && !isLoading && (
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-6 text-center">
-            <p className="text-destructive mb-4">{error.message || "Error loading leaderboard. Make sure backend is running."}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-destructive hover:bg-destructive/90 text-white rounded-lg font-medium transition"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {/* {!isLoading && !error && filteredLeaders.length >= 3 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            {[0, 1, 2].map((i) => {
-              const player = filteredLeaders[i];
-              return (
-                <div
-                  key={player.rank}
-                  className={`rounded-xl border bg-card p-4 text-center ${
-                    i === 0 ? "border-yellow-400/50" : ""
-                  }`}
-                >
-                  <div className="text-3xl mb-2">
-                    {i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}
-                  </div>
-                  <p className="font-semibold">{player.name}</p>
-                  <p className="text-sm text-muted-foreground">{player.peakWpm} WPM</p>
-                </div>
-              );
-            })}
-          </div>
-        )} */}
-
             {/* Table */}
-            {!error && filteredLeaders.length > 0 && (
+            {!error && currentLeaders.length > 0 && (
               <>
                 <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
                   <Table>
@@ -316,9 +250,8 @@ export default function Leaderboard() {
                     </TableHeader>
                     <TableBody>
                       {currentLeaders.map((player) => (
-                        <>
+                        <React.Fragment key={player.rank || player.userId}>
                           <TableRow
-                            key={player.rank}
                             onClick={() =>
                               setExpandedRow(expandedRow === player.rank ? null : player.rank)
                             }
@@ -357,12 +290,11 @@ export default function Leaderboard() {
                                   />
                                 ) : (
                                   <div className="w-10 h-10 rounded-full bg-muted border flex items-center justify-center font-semibold text-sm shrink-0">
-                                    {player.name.charAt(0).toUpperCase()}
+                                    {player.name ? player.name.charAt(0).toUpperCase() : '?'}
                                   </div>
                                 )}
                                 <div className="truncate">
                                   <p className="font-semibold text-foreground truncate" title={player.name}>{player.name}</p>
-                                  {/* <p className="text-xs text-muted-foreground">{player.email}</p> */}
                                 </div>
                               </div>
                             </TableCell>
@@ -413,51 +345,48 @@ export default function Leaderboard() {
                             <TableRow className="bg-muted/20">
                               <TableCell colSpan={7}>
                                 <div className="rounded-lg border bg-background p-5">
-                              {/* Changed gap-40 to gap-10 (mobile) and added lg:gap-40 (desktop) */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-40">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-40">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        Email
+                                      </span>
+                                      <span className="text-sm font-medium">
+                                        {player.email}
+                                      </span>
+                                    </div>
 
-  <div className="flex flex-col gap-1">
-    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-      Email
-    </span>
-    <span className="text-sm font-medium">
-      {player.email}
-    </span>
-  </div>
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        Phone
+                                      </span>
+                                      <span className="text-sm font-medium">
+                                        {player.phone ?? "—"}
+                                      </span>
+                                    </div>
 
-  <div className="flex flex-col gap-1">
-    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-      Phone
-    </span>
-    <span className="text-sm font-medium">
-      {player.phone ?? "—"}
-    </span>
-  </div>
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        Location
+                                      </span>
+                                      <span className="text-sm font-medium">
+                                        {player.location ?? "—"}
+                                      </span>
+                                    </div>
 
-  <div className="flex flex-col gap-1">
-    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-      Location
-    </span>
-    <span className="text-sm font-medium">
-      {player.location ?? "—"}
-    </span>
-  </div>
-
-  <div className="flex flex-col gap-1">
-    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-      Total Tests
-    </span>
-    <span className="text-sm font-medium">
-      {player.totalTests}
-    </span>
-  </div>
-
-</div>
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        Total Tests
+                                      </span>
+                                      <span className="text-sm font-medium">
+                                        {player.totalTests}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
                               </TableCell>
                             </TableRow>
                           )}
-                        </>
+                        </React.Fragment>
                       ))}
                     </TableBody>
                   </Table>
@@ -467,8 +396,8 @@ export default function Leaderboard() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between mt-6 px-4 py-4 bg-muted/30 rounded-lg">
                     <p className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1} to {Math.min(endIndex, filteredLeaders.length)} of{" "}
-                      {filteredLeaders.length} players
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalCount)} of{" "}
+                      {totalCount} players
                     </p>
 
                     <div className="flex items-center gap-2">
@@ -512,30 +441,30 @@ export default function Leaderboard() {
         )}
 
         {/* Empty State */}
-      {!isLoading && !error && filteredLeaders.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-lg font-medium text-foreground mb-1">
-            {searchQuery ? "No matching players" : "Leaderboard is empty"}
-          </p>
-          <p className="text-sm text-muted-foreground mb-6 max-w-md">
-            {searchQuery
-              ? "Try a different name or clear the search to see all players."
-              : "Once players complete typing tests, rankings will appear here."}
-          </p>
-          {searchQuery && (
-            <button
-
-            onClick={() => {
-                setSearchQuery("");
-                setDebouncedQuery("");
-              }}
-              className="h-10 px-4 rounded-md border border-input text-sm font-medium hover:bg-muted transition"
-            >
-              Clear search
-            </button>
-          )}
-        </div>
-      )}
+        {!isLoading && !error && currentLeaders.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-lg font-medium text-foreground mb-1">
+              {searchQuery ? "No matching players" : "Leaderboard is empty"}
+            </p>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+              {searchQuery
+                ? "Try a different name or clear the search to see all players."
+                : "Once players complete typing tests, rankings will appear here."}
+            </p>
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setDebouncedQuery("");
+                  setCurrentPage(1);
+                }}
+                className="h-10 px-4 rounded-md border border-input text-sm font-medium hover:bg-muted transition"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <Footer isLoggedIn={isLoggedIn} />

@@ -180,9 +180,19 @@ export const getTypingStats = async (email, token) => {
 
 // ==================== LEADERBOARD ENDPOINTS ====================
 
-export const getLeaderboard = async (limit = 10) => {
+export const getLeaderboard = async (params = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profile/leaderboard/global/top?limit=${limit}`);
+    const options = typeof params === 'number' ? { limit: params } : params;
+    const { page = 1, limit = 10, search = '', sortBy = 'peak', order = 'DESC' } = options;
+    
+    const queryParams = new URLSearchParams();
+    if (page) queryParams.append('page', page);
+    if (limit) queryParams.append('limit', limit);
+    if (search) queryParams.append('search', search);
+    if (sortBy) queryParams.append('sortBy', sortBy);
+    if (order) queryParams.append('order', order);
+
+    const response = await fetch(`${API_BASE_URL}/profile/leaderboard/global/top?${queryParams.toString()}`);
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
     return await response.json();
   } catch (error) {
