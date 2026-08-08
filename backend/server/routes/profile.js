@@ -5,58 +5,105 @@ const verifyToken = require('../middleware/verifyToken');
 
 const router = express.Router();
 
+const { Op } = require('sequelize');
+
 // GET /profile/leaderboard/global/top - Get top typists (public endpoint - MUST BE BEFORE /:email)
 router.get("/leaderboard/global/top", async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 10));
+    const search = (req.query.search || '').trim();
+    const sortBy = req.query.sortBy || 'peak';
+    const order = (req.query.order || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    // Get all users
-    const users = await User.findAll({ attributes: ['id', 'name', 'email', 'createdAt'] });
-    
-    let leaderboardData = await Promise.all(
-      users.map(async (user) => {
-        const profile = await UserProfile.findOne({ where: { userId: user.id } });
-        return {
-          userId: user.id,
-          name: user.name,
-          email: user.email,
-          profileImage: profile?.profileImage || null,
-          peakWpm: profile?.highestSpeed || 0,
-          avgWpm: profile?.averageSpeed || 0,
-          totalTests: profile?.totalTests || 0,
-          streak: profile?.dailyStreak || 0,
-          accuracy: profile?.highestAccuracy || 0,
-          lastTestDate: profile?.lastTestDate || null,
-          phone: profile?.phone || null,
-          location: profile?.address || null
-        };
-      })
-    );
+    const whereClause = {
+      totalTests: { [Op.gt]: 0 }
+    };
 
-    // Filter out users with no tests
-    const activeUsers = leaderboardData.filter(user => user.totalTests > 0);
+    const searchOp = Op.iLike || Op.like;
+    const userWhereClause = search ? {
+      [Op.or]: [
+        { name: { [searchOp]: `%${search}%` } },
+        { email: { [searchOp]: `%${search}%` } }
+      ]
+    } : undefined;
 
-    // Sort by Peak WPM (highest speed) descending, then by total tests, then by average WPM
-    activeUsers.sort((a, b) => {
-      if (b.peakWpm !== a.peakWpm) {
-        return b.peakWpm - a.peakWpm;
-      }
-      if (b.totalTests !== a.totalTests) {
-        return b.totalTests - a.totalTests;
-      }
-      return b.avgWpm - a.avgWpm;
+    let orderClause = [];
+    if (sortBy === 'avg') {
+      orderClause = [
+        ['averageSpeed', order],
+        ['highestSpeed', 'DESC'],
+        ['totalTests', 'DESC']
+      ];
+    } else if (sortBy === 'accuracy') {
+      orderClause = [
+        ['highestAccuracy', order],
+        ['highestSpeed', 'DESC'],
+        ['totalTests', 'DESC']
+      ];
+    } else if (sortBy === 'streak') {
+      orderClause = [
+        ['dailyStreak', order],
+        ['highestSpeed', 'DESC'],
+        ['totalTests', 'DESC']
+      ];
+    } else if (sortBy === 'tests') {
+      orderClause = [
+        ['totalTests', order],
+        ['highestSpeed', 'DESC']
+      ];
+    } else {
+      // Default: peak
+      orderClause = [
+        ['highestSpeed', order],
+        ['totalTests', 'DESC'],
+        ['averageSpeed', 'DESC']
+      ];
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await UserProfile.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email', 'createdAt'],
+          where: userWhereClause,
+          required: true
+        }
+      ],
+      order: orderClause,
+      limit: limit,
+      offset: offset
     });
 
-    // Add rank and limit results
-    const rankedData = activeUsers.slice(0, limit).map((player, index) => ({
-      rank: index + 1,
-      ...player
-    }));
+    const rankedData = rows.map((profile, index) => {
+      const user = profile.User || {};
+      return {
+        rank: offset + index + 1,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        profileImage: profile.profileImage || null,
+        peakWpm: profile.highestSpeed || 0,
+        avgWpm: profile.averageSpeed || 0,
+        totalTests: profile.totalTests || 0,
+        streak: profile.dailyStreak || 0,
+        accuracy: profile.highestAccuracy || 0,
+        lastTestDate: profile.lastTestDate || null,
+        phone: profile.phone || null,
+        location: profile.address || null
+      };
+    });
 
     res.send({
       success: true,
       leaderboard: rankedData,
-      total: activeUsers.length
+      total: count,
+      page: page,
+      limit: limit,
+      totalPages: Math.ceil(count / limit) || 1
     });
   } catch (err) {
     res.status(500).send({ success: false, message: "Server error", error: err.message });
