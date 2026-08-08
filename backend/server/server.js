@@ -162,16 +162,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server with Cluster Mode for maximum performance
+// Start server (Optional Cluster Mode via ENABLE_CLUSTER=true)
 const PORT = process.env.PORT || 10000;
 const cluster = require('cluster');
 const os = require('os');
-const numCPUs = os.cpus().length;
+const enableCluster = process.env.ENABLE_CLUSTER === 'true';
 
-if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
+if (enableCluster && cluster.isMaster) {
+  const numCPUs = os.cpus().length;
   logger.info(`Master process ${process.pid} is running`, { category: 'SYSTEM', pid: process.pid });
   
-  // Master process syncs the database ONCE to prevent race conditions during alter
   sequelize.sync(syncOptions).then(() => {
     logger.db.connected({ mode: 'Master' });
     logger.info(`Scaling server across ${numCPUs} CPU cores...`, { numCPUs });
@@ -188,18 +188,15 @@ if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
     cluster.fork();
   });
 } else {
-  // Worker process or development mode
   const startServer = () => {
     const server = app.listen(PORT, () => {
-      if (process.env.NODE_ENV !== 'production' || !cluster.isMaster) {
-        logger.info('Server Started', {
-          port: PORT,
-          pid: process.pid,
-          environment: process.env.NODE_ENV || 'development',
-          nodeVersion: process.version,
-          url: `http://localhost:${PORT}/`
-        });
-      }
+      logger.info('Server Started', {
+        port: PORT,
+        pid: process.pid,
+        environment: process.env.NODE_ENV || 'development',
+        nodeVersion: process.version,
+        url: `http://localhost:${PORT}/`
+      });
     });
 
     process.on('SIGTERM', () => {
@@ -213,24 +210,20 @@ if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
     });
   };
 
-  if (process.env.NODE_ENV !== 'production') {
-    // In development mode (not a cluster), sync the DB
-    sequelize.sync(syncOptions).then(() => {
-      logger.db.connected({ mode: 'Dev' });
-      startServer();
-    }).catch(err => {
-      logger.db.queryFailed(err, { context: 'Dev DB Sync' });
-    });
-  } else {
-    // Production workers just connect (no sync, master handled it)
+  sequelize.sync(syncOptions).then(() => {
+    logger.db.connected({ mode: process.env.NODE_ENV || 'development' });
+    startServer();
+  }).catch(err => {
+    logger.db.queryFailed(err, { context: 'DB Sync' });
+    // Fallback: connect even if sync warnings occur
     sequelize.authenticate().then(() => {
-      logger.db.connected({ mode: 'Worker' });
+      logger.db.connected({ mode: 'Fallback Auth' });
       startServer();
-    }).catch(err => {
-      logger.db.queryFailed(err, { context: 'Worker DB Connect' });
+    }).catch(authErr => {
+      logger.db.queryFailed(authErr, { context: 'DB Connection Failed' });
       process.exit(1);
     });
-  }
+  });
 }
 
 module.exports = app;

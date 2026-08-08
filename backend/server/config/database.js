@@ -25,10 +25,11 @@ const sequelize = new Sequelize(DB_URL, {
   logging: process.env.DB_LOGGING === 'true' ? (msg) => logger.debug(msg, { category: 'DATABASE_QUERY' }) : false,
   dialectOptions,
   pool: {
-    max: 20,
-    min: 2,
-    acquire: 10000,
-    idle: 10000
+    max: parseInt(process.env.DB_POOL_MAX) || 5, // Strict limit to prevent EMAXCONNSESSION (pool_size: 15)
+    min: parseInt(process.env.DB_POOL_MIN) || 0, // 0 minimum connections so idle clients are closed
+    acquire: 30000,
+    idle: 10000,
+    evict: 1000
   }
 });
 
